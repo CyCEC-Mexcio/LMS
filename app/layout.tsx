@@ -9,27 +9,26 @@ const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: 'CYCEC México - Certificaciones Oficiales y Capacitación Empresarial',
-  description:
-    'Capacitación, consultoría y certificación de competencias alineadas a estándares ISO y oficiales para profesionales y empresas en México.',
-  openGraph: {
-    title: 'CYCEC México',
-    description:
-      'Certificaciones oficiales y capacitación empresarial alineadas a estándares ISO.',
-    url: 'https://cycecmexico.com',
-    siteName: 'CYCEC México',
-    images: [
+  description: 'Capacitación, consultoría y certificación de competencias alineadas a estándares ISO y oficiales para profesionales y empresas en México.',
+  generator: 'CYCEC México',
+  icons: {
+    icon: [
       {
-        url: 'https://cycecmexico.com/og-image.png',
-        width: 1200,
-        height: 630,
-        alt: 'CYCEC México',
+        url: '/icon-light-32x32.png',
+        media: '(prefers-color-scheme: light)',
+      },
+      {
+        url: '/icon-dark-32x32.png',
+        media: '(prefers-color-scheme: dark)',
+      },
+      {
+        url: '/icon.svg',
+        type: 'image/svg+xml',
       },
     ],
-    locale: 'es_MX',
-    type: 'website',
+    apple: '/apple-icon.png',
   },
 }
-
 
 export default function RootLayout({
   children,
