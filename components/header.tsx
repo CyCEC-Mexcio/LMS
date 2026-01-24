@@ -21,27 +21,52 @@ export function Header() {
   useEffect(() => {
     // Get initial user
     const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      setUser(user)
-      
-      if (user) {
-        // Get user profile
-        const { data: profileData } = await supabase
-          .from("profiles")
-          .select("role, full_name")
-          .eq("id", user.id)
-          .single()
+      try {
+        console.log("🔍 Starting getUser...")
+        const { data: { user }, error } = await supabase.auth.getUser()
         
-        setProfile(profileData)
+        console.log("👤 User result:", { user, error })
+        
+        if (error) {
+          console.error("❌ Error getting user:", error)
+          setUser(null)
+          setProfile(null)
+          setLoading(false)
+          return
+        }
+        
+        setUser(user)
+        console.log("✅ User set:", user?.email)
+        
+        if (user) {
+          // Get user profile
+          const { data: profileData, error: profileError } = await supabase
+            .from("profiles")
+            .select("role, full_name")
+            .eq("id", user.id)
+            .single()
+          
+          console.log("📋 Profile result:", { profileData, profileError })
+          
+          if (profileError) {
+            console.error("❌ Error getting profile:", profileError)
+          }
+          
+          setProfile(profileData)
+        }
+      } catch (err) {
+        console.error("💥 Unexpected error in getUser:", err)
+      } finally {
+        console.log("🏁 Setting loading to false")
+        setLoading(false)
       }
-      
-      setLoading(false)
     }
 
     getUser()
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log("🔄 Auth state changed:", event, session?.user?.email)
       setUser(session?.user ?? null)
       
       if (session?.user) {
@@ -60,10 +85,12 @@ export function Header() {
     return () => {
       subscription.unsubscribe()
     }
-  }, [supabase])
+  }, [])
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
+    setUser(null)
+    setProfile(null)
     router.push("/")
     router.refresh()
   }
@@ -117,35 +144,33 @@ export function Header() {
               Contacto
             </Link>
             
-            {!loading && (
-              <>
-                {user ? (
-                  <div className="flex items-center gap-3">
-                    <Link href={getDashboardLink()}>
-                      <Button variant="ghost" className="text-white hover:bg-white/20 gap-2">
-                        <User className="h-4 w-4" />
-                        <span className="hidden lg:inline">
-                          {profile?.full_name || "Mi Cuenta"}
-                        </span>
-                      </Button>
-                    </Link>
-                    <Button 
-                      onClick={handleLogout}
-                      variant="ghost" 
-                      className="text-white hover:bg-white/20"
-                      size="icon"
-                    >
-                      <LogOut className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ) : (
-                  <Link href="/login">
-                    <Button className="bg-white text-[#C4161C] hover:bg-white/90 font-semibold">
-                      Acceder
-                    </Button>
-                  </Link>
-                )}
-              </>
+            {loading ? (
+              <div className="w-20 h-9 bg-white/20 rounded animate-pulse" />
+            ) : user ? (
+              <div className="flex items-center gap-3">
+                <Link href={getDashboardLink()}>
+                  <Button variant="ghost" className="text-white hover:bg-white/20 gap-2">
+                    <User className="h-4 w-4" />
+                    <span className="hidden lg:inline">
+                      {profile?.full_name || "Mi Cuenta"}
+                    </span>
+                  </Button>
+                </Link>
+                <Button 
+                  onClick={handleLogout}
+                  variant="ghost" 
+                  className="text-white hover:bg-white/20"
+                  size="icon"
+                >
+                  <LogOut className="h-4 w-4" />
+                </Button>
+              </div>
+            ) : (
+              <Link href="/login">
+                <Button className="bg-white text-[#C4161C] hover:bg-white/90 font-semibold">
+                  Acceder
+                </Button>
+              </Link>
             )}
           </nav>
 
@@ -181,33 +206,31 @@ export function Header() {
                 Contacto
               </Link>
               
-              {!loading && (
+              {loading ? (
+                <div className="w-full h-9 bg-white/20 rounded animate-pulse" />
+              ) : user ? (
                 <>
-                  {user ? (
-                    <>
-                      <Link href={getDashboardLink()}>
-                        <Button variant="ghost" className="text-white hover:bg-white/20 w-full justify-start gap-2">
-                          <User className="h-4 w-4" />
-                          {profile?.full_name || "Mi Cuenta"}
-                        </Button>
-                      </Link>
-                      <Button 
-                        onClick={handleLogout}
-                        variant="ghost" 
-                        className="text-white hover:bg-white/20 w-full justify-start gap-2"
-                      >
-                        <LogOut className="h-4 w-4" />
-                        Cerrar Sesión
-                      </Button>
-                    </>
-                  ) : (
-                    <Link href="/login">
-                      <Button className="bg-white text-[#C4161C] hover:bg-white/90 font-semibold w-full">
-                        Acceder
-                      </Button>
-                    </Link>
-                  )}
+                  <Link href={getDashboardLink()}>
+                    <Button variant="ghost" className="text-white hover:bg-white/20 w-full justify-start gap-2">
+                      <User className="h-4 w-4" />
+                      {profile?.full_name || "Mi Cuenta"}
+                    </Button>
+                  </Link>
+                  <Button 
+                    onClick={handleLogout}
+                    variant="ghost" 
+                    className="text-white hover:bg-white/20 w-full justify-start gap-2"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Cerrar Sesión
+                  </Button>
                 </>
+              ) : (
+                <Link href="/login">
+                  <Button className="bg-white text-[#C4161C] hover:bg-white/90 font-semibold w-full">
+                    Acceder
+                  </Button>
+                </Link>
               )}
             </nav>
           </div>

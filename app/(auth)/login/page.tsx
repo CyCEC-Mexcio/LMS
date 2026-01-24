@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 
-export default function LoginPage() {
+// Separate component that uses useSearchParams
+function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -33,25 +34,29 @@ export default function LoginPage() {
       setError(error.message);
       setLoading(false);
     } else {
-      router.push(redirect);
-      router.refresh();
+      // Use replace for faster navigation, no refresh needed
+      router.replace(redirect);
     }
   };
 
   const handleGoogleLogin = async () => {
-    setLoading(true);
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback?redirect=${redirect}`,
-      },
-    });
+  setLoading(true);
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(redirect)}`,
+      queryParams: {
+        access_type: 'offline',
+        prompt: 'consent',
+      }
+    },
+  });
 
-    if (error) {
-      setError(error.message);
-      setLoading(false);
-    }
-  };
+  if (error) {
+    setError(error.message);
+    setLoading(false);
+  }
+};
 
   return (
     <div className="bg-white p-8 rounded-lg shadow-lg">
@@ -73,6 +78,7 @@ export default function LoginPage() {
             onChange={(e) => setEmail(e.target.value)}
             required
             disabled={loading}
+            autoComplete="email"
           />
         </div>
 
@@ -85,6 +91,7 @@ export default function LoginPage() {
             onChange={(e) => setPassword(e.target.value)}
             required
             disabled={loading}
+            autoComplete="current-password"
           />
         </div>
 
@@ -137,5 +144,25 @@ export default function LoginPage() {
         </Link>
       </p>
     </div>
+  );
+}
+
+// Main page component with Suspense boundary
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="bg-white p-8 rounded-lg shadow-lg">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-48 mx-auto mb-6"></div>
+          <div className="space-y-4">
+            <div className="h-10 bg-gray-200 rounded"></div>
+            <div className="h-10 bg-gray-200 rounded"></div>
+            <div className="h-10 bg-gray-200 rounded"></div>
+          </div>
+        </div>
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   );
 }
