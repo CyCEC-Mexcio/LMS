@@ -8,10 +8,13 @@ export async function GET(request: Request) {
   const redirect = requestUrl.searchParams.get('redirect') || '/student'
 
   if (code) {
-    const supabase = await createClient(cookies())
-    
+    // ✅ FIX: await cookies()
+    const cookieStore = await cookies()
+
+    const supabase = await createClient(cookieStore)
+
     const { error } = await supabase.auth.exchangeCodeForSession(code)
-    
+
     if (error) {
       console.error('OAuth callback error:', error)
       return NextResponse.redirect(
@@ -20,6 +23,5 @@ export async function GET(request: Request) {
     }
   }
 
-  // Redirect to the intended destination
   return NextResponse.redirect(new URL(redirect, request.url))
 }
