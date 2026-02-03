@@ -30,32 +30,38 @@ export const navigationItems: NavItem[] = [
     icon: "🏆",
     roles: ["student", "teacher"],
   },
-  // Teacher only
+  // Teacher only - NOT shown to admin
   {
     title: "Crear Curso",
     href: "/teacher/courses/new",
     icon: "➕",
-    roles: ["teacher", "admin"],
+    roles: ["teacher"], // Removed "admin"
   },
   {
     title: "Mis Cursos",
     href: "/teacher",
     icon: "📝",
-    roles: ["teacher", "admin"],
+    roles: ["teacher"], // Removed "admin"
   },
   {
     title: "Analíticas",
     href: "/teacher/analytics",
     icon: "📈",
-    roles: ["teacher", "admin"],
+    roles: ["teacher"], // Removed "admin"
   },
   {
     title: "Ganancias",
     href: "/teacher/earnings",
     icon: "💰",
-    roles: ["teacher", "admin"],
+    roles: ["teacher"], // Removed "admin"
   },
   // Admin only
+  {
+    title: "Panel Admin",
+    href: "/admin",
+    icon: "⚡",
+    roles: ["admin"],
+  },
   {
     title: "Gestionar Usuarios",
     href: "/admin/users",
@@ -66,6 +72,18 @@ export const navigationItems: NavItem[] = [
     title: "Gestionar Cursos",
     href: "/admin/courses",
     icon: "🎓",
+    roles: ["admin"],
+  },
+  {
+    title: "Crear Curso",
+    href: "/admin/courses/new",
+    icon: "➕",
+    roles: ["admin"],
+  },
+  {
+    title: "Cursos Pendientes",
+    href: "/admin/courses/pending",
+    icon: "⏳",
     roles: ["admin"],
   },
   {

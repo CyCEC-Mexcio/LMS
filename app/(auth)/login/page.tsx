@@ -17,7 +17,7 @@ function LoginForm() {
   
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirect = searchParams.get("redirect") || "/student";
+  const explicitRedirect = searchParams.get("redirect");
   const supabase = createClient();
 
   const handleEmailLogin = async (e: React.FormEvent) => {
@@ -25,7 +25,7 @@ function LoginForm() {
     setLoading(true);
     setError(null);
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { error, data } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
@@ -34,29 +34,52 @@ function LoginForm() {
       setError(error.message);
       setLoading(false);
     } else {
-      // Use replace for faster navigation, no refresh needed
-      router.replace(redirect);
+      // If there's an explicit redirect, use it
+      if (explicitRedirect) {
+        router.replace(explicitRedirect);
+        return;
+      }
+
+      // Otherwise, get user profile and redirect based on role
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', data.user.id)
+        .single();
+
+      if (profile?.role) {
+        const roleRedirects: { [key: string]: string } = {
+          admin: '/admin',
+          teacher: '/teacher',
+          student: '/student',
+        };
+        
+        const redirectPath = roleRedirects[profile.role] || '/student';
+        router.replace(redirectPath);
+      } else {
+        router.replace('/student');
+      }
     }
   };
 
   const handleGoogleLogin = async () => {
-  setLoading(true);
-  const { error } = await supabase.auth.signInWithOAuth({
-    provider: "google",
-    options: {
-      redirectTo: `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(redirect)}`,
-      queryParams: {
-        access_type: 'offline',
-        prompt: 'consent',
-      }
-    },
-  });
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback${explicitRedirect ? `?redirect=${encodeURIComponent(explicitRedirect)}` : ''}`,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        }
+      },
+    });
 
-  if (error) {
-    setError(error.message);
-    setLoading(false);
-  }
-};
+    if (error) {
+      setError(error.message);
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="bg-white p-8 rounded-lg shadow-lg">
