@@ -36,11 +36,7 @@ export default function DeleteCourseButton({
     setError(null);
 
     try {
-      // Delete associated data first (cascading deletes may handle this, but being explicit)
-      // Delete enrollments
-      await supabase.from("enrollments").delete().eq("course_id", courseId);
-
-      // Delete lessons (which will cascade to delete lesson_progress, quiz_attempts, etc.)
+      // Get sections first to delete lessons and their related data
       const { data: sections } = await supabase
         .from("sections")
         .select("id")
@@ -48,16 +44,103 @@ export default function DeleteCourseButton({
 
       if (sections && sections.length > 0) {
         const sectionIds = sections.map((s) => s.id);
-        await supabase.from("lessons").delete().in("section_id", sectionIds);
+
+        // Get all lessons in these sections
+        const { data: lessons } = await supabase
+          .from("lessons")
+          .select("id")
+          .in("section_id", sectionIds);
+
+        if (lessons && lessons.length > 0) {
+          const lessonIds = lessons.map((l) => l.id);
+
+          // Delete quiz attempts first (references quiz_questions indirectly through quizzes)
+          const { data: quizzes } = await supabase
+            .from("quizzes")
+            .select("id")
+            .in("lesson_id", lessonIds);
+
+          if (quizzes && quizzes.length > 0) {
+            const quizIds = quizzes.map((q) => q.id);
+            
+            // Delete quiz attempts
+            await supabase
+              .from("quiz_attempts")
+              .delete()
+              .in("quiz_id", quizIds);
+
+            // Delete quiz questions
+            await supabase
+              .from("quiz_questions")
+              .delete()
+              .in("quiz_id", quizIds);
+
+            // Delete quizzes
+            await supabase
+              .from("quizzes")
+              .delete()
+              .in("lesson_id", lessonIds);
+          }
+
+          // Delete progress
+          await supabase
+            .from("progress")
+            .delete()
+            .in("lesson_id", lessonIds);
+
+          // Delete lessons
+          await supabase
+            .from("lessons")
+            .delete()
+            .in("section_id", sectionIds);
+        }
+
+        // Delete sections
+        await supabase.from("sections").delete().eq("course_id", courseId);
       }
 
-      // Delete sections
-      await supabase.from("sections").delete().eq("course_id", courseId);
+      // Get enrollments to delete transactions
+      const { data: enrollments } = await supabase
+        .from("enrollments")
+        .select("id")
+        .eq("course_id", courseId);
+
+      if (enrollments && enrollments.length > 0) {
+        const enrollmentIds = enrollments.map((e) => e.id);
+
+        // Delete payout_items that reference transactions for this course
+        const { data: transactions } = await supabase
+          .from("transactions")
+          .select("id")
+          .in("enrollment_id", enrollmentIds);
+
+        if (transactions && transactions.length > 0) {
+          const transactionIds = transactions.map((t) => t.id);
+          
+          // Delete payout items
+          await supabase
+            .from("payout_items")
+            .delete()
+            .in("transaction_id", transactionIds);
+        }
+
+        // Delete transactions
+        await supabase
+          .from("transactions")
+          .delete()
+          .in("enrollment_id", enrollmentIds);
+      }
+
+      // Delete enrollments
+      await supabase.from("enrollments").delete().eq("course_id", courseId);
+
+      // Delete certificates
+      await supabase.from("certificates").delete().eq("course_id", courseId);
 
       // Delete reviews
       await supabase.from("reviews").delete().eq("course_id", courseId);
 
-      // Delete notifications related to this course
+      // Delete admin notifications
       await supabase
         .from("admin_notifications")
         .delete()
@@ -73,6 +156,7 @@ export default function DeleteCourseButton({
 
       setDeleteDialogOpen(false);
       router.refresh();
+      router.push("/admin/courses"); // Navigate back to courses list
     } catch (err: any) {
       console.error("Error deleting course:", err);
       setError(err.message || "Error al eliminar el curso");
@@ -113,6 +197,8 @@ export default function DeleteCourseButton({
               <li>Todas las inscripciones de estudiantes</li>
               <li>Todo el progreso de los estudiantes</li>
               <li>Todas las reseñas y calificaciones</li>
+              <li>Todos los certificados emitidos</li>
+              <li>Todas las transacciones relacionadas</li>
             </ul>
           </div>
 

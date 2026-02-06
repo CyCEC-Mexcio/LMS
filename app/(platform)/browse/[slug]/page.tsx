@@ -13,6 +13,7 @@ import {
   CheckCircle,
 } from "lucide-react";
 import Link from "next/link";
+import { CoursePurchaseButton } from "@/components/course/course-purchase-button";
 
 export default async function CourseDetailPage({
   params,
@@ -199,26 +200,15 @@ export default async function CourseDetailPage({
                     </div>
                   )}
 
-                  <div className="mb-4">
-                    <div className="text-3xl font-bold text-gray-900">
-                      ${course.price?.toFixed(2) || "0.00"}
-                      <span className="text-lg font-normal text-gray-500 ml-1">
-                        MXN
-                      </span>
-                    </div>
-                  </div>
-
-                  {isEnrolled ? (
-                    <Link href={`/student/courses/${course.id}`}>
-                      <Button className="w-full" size="lg">
-                        Ir al Curso
-                      </Button>
-                    </Link>
-                  ) : (
-                    <Button className="w-full" size="lg">
-                      Inscribirse Ahora
-                    </Button>
-                  )}
+                  <CoursePurchaseButton
+                    courseId={course.id}
+                    price={course.price || 0}
+                    currency={course.currency || "MXN"}
+                    title={course.title}
+                    isEnrolled={isEnrolled}
+                    isPublished={course.is_published}
+                    isApproved={course.is_approved}
+                  />
 
                   <div className="mt-6 space-y-3 text-sm text-gray-600">
                     <div className="flex items-center gap-2">
