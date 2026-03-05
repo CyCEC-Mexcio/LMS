@@ -1,13 +1,15 @@
 // app/api/admin/users/[userId]/route.ts
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { cookies } from 'next/headers';
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
-    const supabase = createClient();
+    const cookieStore = await cookies();
+    const supabase = createClient(cookieStore);
     
     // Check if user is admin
     const { data: { user } } = await supabase.auth.getUser();
@@ -25,7 +27,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const { userId } = params;
+    const { userId } = await params;
 
     // Delete user's related data first (foreign key constraints)
     // Delete enrollments

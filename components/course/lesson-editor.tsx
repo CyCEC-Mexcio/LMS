@@ -276,9 +276,9 @@ export default function ModularLessonEditor({
   };
 
   const updateModule = (id: string, updates: Partial<Module>) => {
-    setModules(
+   setModules(
       modules.map((module) =>
-        module.id === id ? { ...module, ...updates } : module
+        module.id === id ? { ...module, ...updates } as Module : module
       )
     );
   };

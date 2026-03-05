@@ -17,7 +17,7 @@ export default async function PlatformLayout({
   return (
     <div className="h-screen flex flex-col">
       {/* Top Navbar */}
-      <PlatformNavbar profile={profile} />
+      <PlatformNavbar/>
 
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar */}

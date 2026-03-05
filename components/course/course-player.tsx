@@ -227,7 +227,9 @@ export default function CoursePlayer({
     setCurrentLesson(firstIncompleteLesson);
     setCurrentSection(firstIncompleteSection);
     setShowQuiz(shouldShowQuiz);
-    setExpandedSections(new Set([firstIncompleteSection.id]));
+    if (firstIncompleteSection) {
+      setExpandedSections(new Set([firstIncompleteSection.id]));
+    }
   }, [course, progress, quizAttempts, quizAttemptsLoaded]);
 
   const isLastLesson = useCallback((): boolean => {
@@ -267,7 +269,7 @@ export default function CoursePlayer({
                           lesson.quizzes.length > 0 &&
                           !quizAttempts.get(lesson.quizzes[0].id)?.passed;
     
-    setShowQuiz(shouldShowQuiz);
+    setShowQuiz(!!shouldShowQuiz);
     setExpandedSections((prev) => new Set(prev).add(section.id));
   }, [progress, quizAttempts, isLessonUnlocked]);
 

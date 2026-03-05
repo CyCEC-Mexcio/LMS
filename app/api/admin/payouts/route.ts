@@ -1,13 +1,14 @@
+// app/api/admin/payouts/route.ts
 import { NextRequest, NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { createClient } from '@/lib/supabase/server';
 
 export async function GET(req: NextRequest) {
   try {
-    const supabase = await createClient();
-    
-    // Check if user is admin
+    const cookieStore = await cookies();
+    const supabase = createClient(cookieStore);
+
     const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -22,7 +23,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Get total pending payouts amount
+    // Pending transactions total
     const { data: pendingTransactions } = await supabase
       .from('transactions')
       .select('instructor_earnings')
@@ -30,29 +31,30 @@ export async function GET(req: NextRequest) {
       .eq('status', 'completed');
 
     const totalPendingPayouts = pendingTransactions?.reduce(
-      (sum, t) => sum + Number(t.instructor_earnings),
-      0
-    ) || 0;
+      (sum, t) => sum + Number(t.instructor_earnings), 0
+    ) ?? 0;
 
-    // Get total number of instructors
     const { count: totalInstructors } = await supabase
       .from('profiles')
       .select('*', { count: 'exact', head: true })
       .eq('role', 'teacher');
 
-    // Get instructors with pending earnings
     const { data: instructorEarnings } = await supabase.rpc(
       'get_instructors_with_pending_earnings'
     );
 
-    // Calculate next payout date (1st Monday of next month)
-    const nextPayoutDate = getNextPayoutDate();
+    const { data: nextPayoutDate } = await supabase.rpc('get_next_payout_date');
 
     return NextResponse.json({
       totalPendingPayouts,
-      totalInstructors: totalInstructors || 0,
-      nextPayoutDate: nextPayoutDate.toISOString(),
-      instructorsWithPendingEarnings: instructorEarnings || [],
+      totalInstructors: totalInstructors ?? 0,
+      nextPayoutDate,
+      instructorsWithPendingEarnings: (instructorEarnings ?? []).map((i: any) => ({
+        instructor_id:     i.instructor_id,
+        instructor_name:   i.instructor_name,
+        pending_amount:    Number(i.pending_earnings ?? 0),
+        transaction_count: Number(i.total_sales ?? 0),
+      })),
     });
 
   } catch (error: any) {
@@ -62,24 +64,4 @@ export async function GET(req: NextRequest) {
       { status: 500 }
     );
   }
-}
-
-function getNextPayoutDate(): Date {
-  const today = new Date();
-  const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
-  
-  // Find first Monday
-  const dayOfWeek = nextMonth.getDay();
-  let daysToAdd = 0;
-  
-  if (dayOfWeek === 0) {
-    // Sunday
-    daysToAdd = 1;
-  } else if (dayOfWeek !== 1) {
-    // Not Monday
-    daysToAdd = 8 - dayOfWeek;
-  }
-  
-  nextMonth.setDate(nextMonth.getDate() + daysToAdd);
-  return nextMonth;
 }

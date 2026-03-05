@@ -176,7 +176,6 @@ export async function GET(
         x: x - lw / 2, y: infoY + 30,
         size: 9, font: fontRegular,
         color: rgb(0.55, 0.55, 0.55),
-        characterSpacing: 1,
       });
       let vSize = 12;
       while (fontBold.widthOfTextAtSize(value, vSize) > 190 && vSize > 8) vSize -= 0.5;
@@ -209,7 +208,7 @@ export async function GET(
       .replace(/\s+/g, "-")
       .toLowerCase();
 
-    return new NextResponse(pdfBytes, {
+    return new NextResponse(Buffer.from(pdfBytes), {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
