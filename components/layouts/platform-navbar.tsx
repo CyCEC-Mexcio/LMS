@@ -1,39 +1,61 @@
+// components/layouts/platform-navbar.tsx
+import { cookies } from "next/headers";
+import { createClient } from "@/lib/supabase/server";
+import { getUserProfile } from "@/lib/auth-utils";
 import Link from "next/link";
+import { Bell } from "lucide-react";
 import UserAvatarDropdown from "./user-avatar-dropdown";
 
-type Profile = {
-  id: string;
-  role: string;
-  full_name: string | null;
-  avatar_url: string | null;
-};
+export default async function PlatformNavbar() {
+  const cookieStore = await cookies();
+  const supabase = createClient(cookieStore);
 
-export default function PlatformNavbar({ profile }: { profile: Profile }) {
+  // Get auth user for Google avatar URL from metadata
+  const { data: { user } } = await supabase.auth.getUser();
+
+  // Get profile for name, role, custom avatar
+  const profile = await getUserProfile();
+
+  if (!profile || !user) return null;
+
+  // ✅ Pull Google avatar from Supabase auth metadata
+  const googleAvatarUrl: string | undefined =
+    user.user_metadata?.avatar_url ||
+    user.user_metadata?.picture ||
+    undefined;
+
   return (
-    <nav className="bg-white border-b border-gray-200 px-6 py-4">
-      <div className="flex items-center justify-between">
-        {/* Logo */}
-        <Link href="/browse" className="flex items-center space-x-2">
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-xl">L</span>
-          </div>
-          <span className="text-xl font-bold text-gray-900">
-            LearnHub
-          </span>
-        </Link>
-
-        {/* Search Bar (we'll implement this later) */}
-        <div className="flex-1 max-w-2xl mx-8">
-          <input
-            type="search"
-            placeholder="Buscar cursos..."
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+    <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 flex-shrink-0 z-10">
+      {/* Left — Logo / brand */}
+      <Link
+        href={
+          profile.role === "admin"
+            ? "/admin"
+            : profile.role === "teacher"
+            ? "/teacher"
+            : "/student"
+        }
+        className="flex items-center gap-2"
+      >
+        <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+          <span className="text-white font-bold text-sm">L</span>
         </div>
+        <span className="font-bold text-gray-900 hidden sm:block">LMS</span>
+      </Link>
 
-        {/* User Avatar & Dropdown */}
-        <UserAvatarDropdown profile={profile} />
+      {/* Right — notifications + avatar */}
+      <div className="flex items-center gap-3">
+        {/* Notification bell — placeholder for future feature */}
+        <button className="relative p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors">
+          <Bell className="w-5 h-5" />
+        </button>
+
+        {/* Avatar dropdown — receives Google URL so it can show the photo */}
+        <UserAvatarDropdown
+          profile={profile}
+          googleAvatarUrl={googleAvatarUrl}
+        />
       </div>
-    </nav>
+    </header>
   );
 }

@@ -276,7 +276,7 @@ export default function NosotrosPage() {
             <div className="grid md:grid-cols-2">
               <div className="relative h-48 md:h-auto">
                 <Image
-                  src="/images/certification-class.jpg"
+                  src="/images/placeholder.jpg"
                   alt="Capacitación profesional"
                   fill
                   className="object-cover"

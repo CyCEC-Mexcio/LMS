@@ -53,7 +53,7 @@ export function HeroSection() {
           <div className="relative">
             <div className="relative rounded-2xl overflow-hidden shadow-2xl">
               <Image 
-                src="/images/hero-meeting.jpg"
+                src="/images/placeholder.jpg"
                 alt="Equipo profesional en capacitación"
                 width={600}
                 height={450}

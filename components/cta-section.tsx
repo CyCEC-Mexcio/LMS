@@ -11,7 +11,7 @@ export function CtaSection() {
           <div className="relative order-2 lg:order-1">
             <div className="rounded-2xl overflow-hidden shadow-2xl">
               <Image 
-                src="/images/certification-class.jpg"
+                src="/images/placeholder.jpg"
                 alt="Capacitación profesional"
                 width={600}
                 height={400}

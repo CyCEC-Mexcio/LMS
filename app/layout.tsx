@@ -8,9 +8,9 @@ const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'CYCEC México - Certificaciones Oficiales y Capacitación Empresarial',
+  title: 'CyCEC México - Certificaciones Oficiales y Capacitación Empresarial',
   description: 'Capacitación, consultoría y certificación de competencias alineadas a estándares ISO y oficiales para profesionales y empresas en México.',
-  generator: 'CYCEC México',
+  generator: 'CyCEC México',
   icons: {
     icon: [
       {

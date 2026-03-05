@@ -1,3 +1,4 @@
+// components/header.tsx
 "use client"
 
 import { useState, useEffect } from "react"
@@ -19,16 +20,11 @@ export function Header() {
   const supabase = createClient()
 
   useEffect(() => {
-    // Get initial user
     const getUser = async () => {
       try {
-        console.log("🔍 Starting getUser...")
         const { data: { user }, error } = await supabase.auth.getUser()
         
-        console.log("👤 User result:", { user, error })
-        
         if (error) {
-          console.error("❌ Error getting user:", error)
           setUser(null)
           setProfile(null)
           setLoading(false)
@@ -36,37 +32,26 @@ export function Header() {
         }
         
         setUser(user)
-        console.log("✅ User set:", user?.email)
         
         if (user) {
-          // Get user profile
-          const { data: profileData, error: profileError } = await supabase
+          const { data: profileData } = await supabase
             .from("profiles")
             .select("role, full_name")
             .eq("id", user.id)
             .single()
           
-          console.log("📋 Profile result:", { profileData, profileError })
-          
-          if (profileError) {
-            console.error("❌ Error getting profile:", profileError)
-          }
-          
           setProfile(profileData)
         }
       } catch (err) {
-        console.error("💥 Unexpected error in getUser:", err)
+        console.error("Error in getUser:", err)
       } finally {
-        console.log("🏁 Setting loading to false")
         setLoading(false)
       }
     }
 
     getUser()
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("🔄 Auth state changed:", event, session?.user?.email)
       setUser(session?.user ?? null)
       
       if (session?.user) {
@@ -75,16 +60,13 @@ export function Header() {
           .select("role, full_name")
           .eq("id", session.user.id)
           .single()
-        
         setProfile(profileData)
       } else {
         setProfile(null)
       }
     })
 
-    return () => {
-      subscription.unsubscribe()
-    }
+    return () => { subscription.unsubscribe() }
   }, [])
 
   const handleLogout = async () => {
@@ -97,15 +79,24 @@ export function Header() {
 
   const getDashboardLink = () => {
     if (!profile) return "/student"
-    
     switch (profile.role) {
-      case "admin":
-        return "/admin"
-      case "teacher":
-        return "/teacher"
-      default:
-        return "/student"
+      case "admin":   return "/admin"
+      case "teacher": return "/teacher"
+      default:        return "/student"
     }
+  }
+
+  // ✅ Search redirects to the public courses page with a query param
+  const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    const form = e.currentTarget
+    const q = (form.elements.namedItem("q") as HTMLInputElement)?.value.trim()
+    if (q) {
+      router.push(`/courses?q=${encodeURIComponent(q)}`)
+    } else {
+      router.push("/courses")
+    }
+    setIsMenuOpen(false)
   }
 
   return (
@@ -117,30 +108,41 @@ export function Header() {
             <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
               <span className="text-[#C4161C] font-bold text-lg">CY</span>
             </div>
-            <span className="font-semibold text-white hidden sm:block">CYCEC México</span>
+            <span className="font-semibold text-white hidden sm:block">CyCEC México</span>
           </Link>
 
           {/* Search Bar - Desktop */}
-          <div className="hidden md:flex items-center max-w-md flex-1 mx-8">
+          <form onSubmit={handleSearch} className="hidden md:flex items-center max-w-md flex-1 mx-8">
             <div className="relative w-full">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/60" />
               <Input 
+                name="q"
                 type="search"
                 placeholder="¿Qué quieres aprender?"
                 className="pl-10 bg-white/20 border-white/30 text-white placeholder:text-white/60 focus:bg-white/30"
               />
             </div>
-          </div>
+          </form>
 
           {/* Navigation - Desktop */}
           <nav className="hidden md:flex items-center gap-6">
-            <Link href="/#cursos" className="text-sm font-medium text-white/90 hover:text-white transition-colors">
+            {/* ✅ FIX: was href="/#cursos" — now points to the public courses page */}
+            <Link
+              href="/courses"
+              className="text-sm font-medium text-white/90 hover:text-white transition-colors"
+            >
               Cursos
             </Link>
-            <Link href="/nosotros" className="text-sm font-medium text-white/90 hover:text-white transition-colors">
+            <Link
+              href="/nosotros"
+              className="text-sm font-medium text-white/90 hover:text-white transition-colors"
+            >
               Nosotros
             </Link>
-            <Link href="/contacto" className="text-sm font-medium text-white/90 hover:text-white transition-colors">
+            <Link
+              href="/contacto"
+              className="text-sm font-medium text-white/90 hover:text-white transition-colors"
+            >
               Contacto
             </Link>
             
@@ -187,22 +189,36 @@ export function Header() {
         {/* Mobile Navigation */}
         {isMenuOpen && (
           <div className="md:hidden py-4 border-t border-white/20">
-            <div className="relative mb-4">
+            <form onSubmit={handleSearch} className="relative mb-4">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/60" />
               <Input 
+                name="q"
                 type="search"
                 placeholder="¿Qué quieres aprender?"
                 className="pl-10 bg-white/20 border-white/30 text-white placeholder:text-white/60"
               />
-            </div>
+            </form>
             <nav className="flex flex-col gap-4">
-              <Link href="/#cursos" className="text-sm font-medium text-white/90 hover:text-white transition-colors">
+              {/* ✅ FIX: same fix for mobile */}
+              <Link
+                href="/courses"
+                onClick={() => setIsMenuOpen(false)}
+                className="text-sm font-medium text-white/90 hover:text-white transition-colors"
+              >
                 Cursos
               </Link>
-              <Link href="/nosotros" className="text-sm font-medium text-white/90 hover:text-white transition-colors">
+              <Link
+                href="/nosotros"
+                onClick={() => setIsMenuOpen(false)}
+                className="text-sm font-medium text-white/90 hover:text-white transition-colors"
+              >
                 Nosotros
               </Link>
-              <Link href="/contacto" className="text-sm font-medium text-white/90 hover:text-white transition-colors">
+              <Link
+                href="/contacto"
+                onClick={() => setIsMenuOpen(false)}
+                className="text-sm font-medium text-white/90 hover:text-white transition-colors"
+              >
                 Contacto
               </Link>
               
@@ -210,7 +226,7 @@ export function Header() {
                 <div className="w-full h-9 bg-white/20 rounded animate-pulse" />
               ) : user ? (
                 <>
-                  <Link href={getDashboardLink()}>
+                  <Link href={getDashboardLink()} onClick={() => setIsMenuOpen(false)}>
                     <Button variant="ghost" className="text-white hover:bg-white/20 w-full justify-start gap-2">
                       <User className="h-4 w-4" />
                       {profile?.full_name || "Mi Cuenta"}
@@ -226,7 +242,7 @@ export function Header() {
                   </Button>
                 </>
               ) : (
-                <Link href="/login">
+                <Link href="/login" onClick={() => setIsMenuOpen(false)}>
                   <Button className="bg-white text-[#C4161C] hover:bg-white/90 font-semibold w-full">
                     Acceder
                   </Button>

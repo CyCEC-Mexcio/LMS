@@ -1,4 +1,6 @@
+// app/api/instructor/stripe-connect/route.ts
 import { NextRequest, NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { createClient } from '@/lib/supabase/server';
 import Stripe from 'stripe';
 
@@ -6,22 +8,19 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2024-11-20.acacia',
 });
 
-// POST /api/instructor/stripe-connect - Create Stripe Connect account and onboarding link
+// POST /api/instructor/stripe-connect
 export async function POST(req: NextRequest) {
   try {
-    const supabase = await createClient();
-    
-    // Get authenticated user
+    // ✅ FIX: pass cookieStore — calling createClient() without it crashes
+    // with "Cannot read properties of undefined (reading 'getAll')"
+    const cookieStore = await cookies();
+    const supabase = createClient(cookieStore);
+
     const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
     if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Check if user is a teacher
     const { data: profile } = await supabase
       .from('profiles')
       .select('role, full_name')
@@ -37,16 +36,14 @@ export async function POST(req: NextRequest) {
 
     const { returnUrl, refreshUrl } = await req.json();
 
-    // Check if instructor already has a Stripe account
     const { data: existingPreference } = await supabase
       .from('payment_preferences')
       .select('stripe_account_id, is_onboarded')
       .eq('instructor_id', user.id)
-      .single();
+      .maybeSingle();
 
     let accountId = existingPreference?.stripe_account_id;
 
-    // Create new Stripe Connect account if doesn't exist
     if (!accountId) {
       const account = await stripe.accounts.create({
         type: 'express',
@@ -66,7 +63,6 @@ export async function POST(req: NextRequest) {
 
       accountId = account.id;
 
-      // Save to database
       await supabase
         .from('payment_preferences')
         .upsert({
@@ -77,7 +73,6 @@ export async function POST(req: NextRequest) {
         });
     }
 
-    // Create account link for onboarding
     const accountLink = await stripe.accountLinks.create({
       account: accountId,
       refresh_url: refreshUrl || `${process.env.NEXT_PUBLIC_SITE_URL}/teacher/payment-settings?refresh=true`,
@@ -87,7 +82,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       url: accountLink.url,
-      accountId: accountId,
+      accountId,
     });
 
   } catch (error: any) {
@@ -99,40 +94,30 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// GET /api/instructor/stripe-connect - Check onboarding status
+// GET /api/instructor/stripe-connect
 export async function GET(req: NextRequest) {
   try {
-    const supabase = await createClient();
-    
+    const cookieStore = await cookies();
+    const supabase = createClient(cookieStore);
+
     const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
     if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get payment preferences
     const { data: preference } = await supabase
       .from('payment_preferences')
       .select('*')
       .eq('instructor_id', user.id)
-      .single();
+      .maybeSingle();
 
     if (!preference?.stripe_account_id) {
-      return NextResponse.json({
-        isOnboarded: false,
-        hasAccount: false,
-      });
+      return NextResponse.json({ isOnboarded: false, hasAccount: false });
     }
 
-    // Check Stripe account status
     const account = await stripe.accounts.retrieve(preference.stripe_account_id);
-
     const isOnboarded = account.charges_enabled && account.payouts_enabled;
 
-    // Update database if status changed
     if (isOnboarded && !preference.is_onboarded) {
       await supabase
         .from('payment_preferences')
@@ -153,7 +138,7 @@ export async function GET(req: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('Stripe Connect status check error:', error);
+    console.error('Stripe Connect status error:', error);
     return NextResponse.json(
       { error: error.message || 'Failed to check onboarding status' },
       { status: 500 }

@@ -1,38 +1,59 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+// app/api/lessons/[lessonId]/complete/route.ts
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
 
 export async function POST(
   req: Request,
-  { params }: { params: { lessonId: string } }
+  { params }: { params: Promise<{ lessonId: string }> } // ✅ Next.js 15
 ) {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
-    const { data: { user } } = await supabase.auth.getUser();
+    const { lessonId } = await params; // ✅ await params
 
+    // ✅ FIX 1: use createClient(cookieStore) not createRouteHandlerClient
+    const cookieStore = await cookies();
+    const supabase = createClient(cookieStore);
+
+    const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const body = await req.json();
-    const { courseId } = body;
+    // ✅ FIX 2: accept duration_seconds from the client so we can track time
+    const { duration_seconds } = body;
 
-    // Update or insert lesson progress
+    // ✅ FIX 3: correct table is 'progress', correct columns are
+    // student_id + lesson_id + is_completed (not user_id/completed/lesson_progress)
     const { error } = await supabase
-      .from('lesson_progress')
-      .upsert({
-        user_id: user.id,
-        lesson_id: params.lessonId,
-        course_id: courseId,
-        completed: true,
-        completed_at: new Date().toISOString(),
-      });
+      .from('progress')
+      .upsert(
+        {
+          student_id: user.id,
+          lesson_id: lessonId,
+          is_completed: true,
+          completed_at: new Date().toISOString(),
+          // ✅ FIX 4: save duration so Mi Progreso shows real time
+          // last_position_seconds stores how far they got — we reuse it
+          // to accumulate total watch time
+          ...(duration_seconds != null && {
+            last_position_seconds: Math.round(duration_seconds),
+          }),
+        },
+        { onConflict: 'student_id,lesson_id' }
+      );
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error updating progress:', error);
+      return NextResponse.json(
+        { error: 'Failed to mark lesson complete' },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error marking lesson complete:', error);
+    console.error('Error in lesson complete route:', error);
     return NextResponse.json(
       { error: 'Failed to mark lesson complete' },
       { status: 500 }

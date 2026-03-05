@@ -351,38 +351,44 @@ export default function CoursePlayer({
   }, [currentSection, currentLesson, course.sections, isLessonUnlocked, selectLesson]);
 
   const completeCourse = async () => {
-    setCompletingCourse(true);
+  setCompletingCourse(true);
 
     try {
-      const { data: existingCert } = await supabase
-        .from("certificates")
-        .select("id")
-        .eq("student_id", studentId)
-        .eq("course_id", course.id)
-        .single();
+      // ✅ Route through the API instead of hitting Supabase directly.
+      //    The API handles: auth, validation, duplicate check, and RLS-safe insert.
+      const response = await fetch("/api/certificates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          courseId: course.id,
+          studentId: studentId,
+        }),
+      });
 
-      if (!existingCert) {
-        const certificateNumber = `CERT-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
-        
-        const { error } = await supabase.from("certificates").insert({
-          student_id: studentId,
-          course_id: course.id,
-          certificate_number: certificateNumber,
-        });
+      const data = await response.json();
 
-        if (error) {
-          console.error("Error creating certificate:", error);
-          alert("Error al crear el certificado. Por favor intenta de nuevo.");
-          setCompletingCourse(false);
-          return;
-        }
+      if (!response.ok) {
+        // Surface a meaningful error instead of a generic alert
+        const message =
+          data.error === "Course not completed"
+            ? `Aún faltan lecciones por completar (${data.completed}/${data.total}).`
+            : data.error === "Not all quizzes passed"
+            ? "Debes aprobar todos los quizzes antes de obtener tu certificado."
+            : data.error || "Error al crear el certificado. Por favor intenta de nuevo.";
+
+        alert(message);
+        setCompletingCourse(false);
+        return;
       }
 
-      alert("🎉 ¡Felicidades! Has completado el curso exitosamente.\n\nTu certificado está disponible en la sección 'Mis Certificados'.");
+      // Success — certificate exists in data.certificate
+      alert(
+        "🎉 ¡Felicidades! Has completado el curso exitosamente.\n\nTu certificado está disponible en la sección 'Mis Certificados'."
+      );
       router.push("/student/certificates");
     } catch (error) {
       console.error("Error completing course:", error);
-      alert("Error al completar el curso. Por favor intenta de nuevo.");
+      alert("Error de conexión al completar el curso. Por favor intenta de nuevo.");
       setCompletingCourse(false);
     }
   };
