@@ -303,7 +303,7 @@ export default function ContactoPage() {
                 variant="secondary"
                 className="bg-white text-[#8E0F14] hover:bg-white/90"
               >
-                <Link href="/cursos">Ver cursos disponibles</Link>
+                <Link href="/courses">Ver cursos disponibles</Link>
               </Button>
               <Button
                 asChild

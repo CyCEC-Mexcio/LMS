@@ -91,6 +91,12 @@ export const navigationItems: NavItem[] = [
     roles: ["admin"],
   },
   {
+    title: "Crear Curso",
+    href: "/admin/courses/new",
+    icon: "➕",
+    roles: ["admin"],
+  },
+  {
     title: "Gestionar Cursos",
     href: "/admin/courses",
     icon: "📚",
@@ -120,4 +126,10 @@ export const navigationItems: NavItem[] = [
     icon: "💳",
     roles: ["admin"],
   },
+  {
+  title: "Configuración",
+  href: "/admin/settings",
+  icon: "⚙️",
+  roles: ["admin"],
+},
 ];

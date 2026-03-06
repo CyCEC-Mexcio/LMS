@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { BookOpen, Users, Star, Filter } from "lucide-react";
+import { BookOpen, Filter, Search } from "lucide-react";
 
 // Level label helper
 function levelLabel(level: string | null) {
@@ -31,8 +31,6 @@ export default async function PublicCoursesPage({
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
 
-  // ✅ Fetch all published + approved courses — no auth required
-  // RLS must allow public SELECT on courses where is_published = true
   let query = supabase
     .from("courses")
     .select(`
@@ -58,9 +56,8 @@ export default async function PublicCoursesPage({
   if (level)    query = query.eq("level", level);
   if (q)        query = query.ilike("title", `%${q}%`);
 
-  const { data: courses, error } = await query;
+  const { data: courses } = await query;
 
-  // Get unique categories for filter pills
   const { data: allCourses } = await supabase
     .from("courses")
     .select("category")
@@ -74,25 +71,32 @@ export default async function PublicCoursesPage({
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero banner */}
-      <div className="bg-[#8E0F14] text-white py-16 px-4">
-        <div className="max-w-7xl mx-auto text-center">
-          <h1 className="text-4xl font-bold mb-4">Nuestros Cursos</h1>
-          <p className="text-white/80 text-lg mb-8 max-w-xl mx-auto">
+      <div className="relative bg-gradient-to-br from-[#6d0c10] via-[#8E0F14] to-[#7a0b10] text-white py-20 px-4 overflow-hidden">
+        {/* Decorative blurs */}
+        <div className="absolute -top-20 -left-20 w-72 h-72 bg-white/5 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-20 -right-20 w-96 h-96 bg-black/10 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="relative max-w-7xl mx-auto text-center">
+          <h1 className="text-4xl sm:text-5xl font-bold mb-3 tracking-tight">Nuestros Cursos</h1>
+          <p className="text-white/70 text-lg mb-10 max-w-xl mx-auto">
             Desarrolla tus habilidades con cursos diseñados por expertos
           </p>
 
-          {/* Search bar */}
-          <form method="GET" className="flex max-w-lg mx-auto gap-2">
-            <input
-              type="text"
-              name="q"
-              defaultValue={q || ""}
-              placeholder="Buscar cursos..."
-              className="flex-1 px-4 py-2 rounded-lg text-gray-900 border-0 focus:outline-none focus:ring-2 focus:ring-white/50"
-            />
+          {/* High-contrast search bar */}
+          <form method="GET" className="flex max-w-xl mx-auto rounded-xl overflow-hidden shadow-2xl shadow-black/30 bg-white">
+            <div className="relative flex-1">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+              <input
+                type="text"
+                name="q"
+                defaultValue={q || ""}
+                placeholder="¿Qué quieres aprender?"
+                className="w-full pl-11 pr-4 py-4 text-gray-800 placeholder:text-gray-400 bg-transparent focus:outline-none text-sm"
+              />
+            </div>
             <button
               type="submit"
-              className="px-6 py-2 bg-white text-[#8E0F14] font-semibold rounded-lg hover:bg-white/90 transition-colors"
+              className="px-7 py-4 bg-[#8E0F14] text-white text-sm font-semibold hover:bg-[#7a0b10] transition-colors flex-shrink-0"
             >
               Buscar
             </button>
@@ -103,11 +107,11 @@ export default async function PublicCoursesPage({
       <div className="max-w-7xl mx-auto px-4 py-10">
         {/* Filter row */}
         {categories.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-8 items-center">
+          <div className="flex flex-wrap gap-2 mb-6 items-center">
             <span className="text-sm text-gray-500 flex items-center gap-1">
               <Filter className="w-4 h-4" /> Categoría:
             </span>
-            <Link href="/courses">
+            <Link href={q ? `/courses?q=${encodeURIComponent(q)}` : "/courses"}>
               <span
                 className={`px-3 py-1 rounded-full text-sm cursor-pointer transition-colors ${
                   !category
@@ -119,7 +123,10 @@ export default async function PublicCoursesPage({
               </span>
             </Link>
             {categories.map((cat) => (
-              <Link key={cat} href={`/courses?category=${encodeURIComponent(cat)}`}>
+              <Link
+                key={cat}
+                href={`/courses?category=${encodeURIComponent(cat)}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
+              >
                 <span
                   className={`px-3 py-1 rounded-full text-sm cursor-pointer transition-colors ${
                     category === cat
@@ -184,7 +191,6 @@ export default async function PublicCoursesPage({
                       <BookOpen className="w-12 h-12 text-white/40" />
                     </div>
                   )}
-                  {/* Certificate badge */}
                   {course.certificate_type && (
                     <div className="absolute top-2 right-2">
                       <span className="bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-0.5 rounded-full">
@@ -198,7 +204,6 @@ export default async function PublicCoursesPage({
 
                 {/* Content */}
                 <div className="p-4 flex flex-col flex-1">
-                  {/* Category + level */}
                   <div className="flex items-center gap-2 mb-2 flex-wrap">
                     {course.category && (
                       <Badge variant="secondary" className="text-xs">
@@ -214,19 +219,16 @@ export default async function PublicCoursesPage({
                     )}
                   </div>
 
-                  {/* Title */}
                   <h3 className="font-bold text-gray-900 mb-1 line-clamp-2 group-hover:text-[#8E0F14] transition-colors">
                     {course.title}
                   </h3>
 
-                  {/* Description */}
                   {course.description && (
                     <p className="text-sm text-gray-500 line-clamp-2 mb-3 flex-1">
                       {course.description}
                     </p>
                   )}
 
-                  {/* Instructor */}
                   {course.instructor_name && (
                     <p className="text-xs text-gray-400 mb-3">
                       Por <span className="font-medium text-gray-600">{course.instructor_name}</span>
@@ -234,7 +236,6 @@ export default async function PublicCoursesPage({
                     </p>
                   )}
 
-                  {/* What you'll learn preview */}
                   {course.what_you_will_learn &&
                     (course.what_you_will_learn as string[]).length > 0 && (
                       <ul className="text-xs text-gray-500 mb-3 space-y-1">
@@ -249,7 +250,6 @@ export default async function PublicCoursesPage({
                       </ul>
                     )}
 
-                  {/* Price + CTA */}
                   <div className="flex items-center justify-between mt-auto pt-3 border-t border-gray-100">
                     <div>
                       {course.price && Number(course.price) > 0 ? (
@@ -273,7 +273,7 @@ export default async function PublicCoursesPage({
           </div>
         )}
 
-        {/* CTA for non-logged-in users */}
+        {/* CTA */}
         <div className="mt-16 bg-[#8E0F14] rounded-2xl p-8 text-center text-white">
           <h2 className="text-2xl font-bold mb-2">¿Listo para empezar?</h2>
           <p className="text-white/80 mb-6">
