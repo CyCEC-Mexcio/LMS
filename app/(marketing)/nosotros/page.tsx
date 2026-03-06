@@ -89,7 +89,7 @@ export default function NosotrosPage() {
         <div className="absolute inset-0 grid grid-cols-3 gap-1">
           <div className="relative overflow-hidden">
             <Image
-              src="/images/about-team-1.jpg"
+              src="/images/placeholder.jpg"
               alt="Equipo colaborando en oficina moderna"
               fill
               className="object-cover hover:scale-105 transition-transform duration-500"
@@ -97,7 +97,7 @@ export default function NosotrosPage() {
           </div>
           <div className="relative overflow-hidden">
             <Image
-              src="/images/about-team-2.jpg"
+              src="/images/placeholder.jpg"
               alt="Presentación profesional"
               fill
               className="object-cover hover:scale-105 transition-transform duration-500"
@@ -105,7 +105,7 @@ export default function NosotrosPage() {
           </div>
           <div className="relative overflow-hidden">
             <Image
-              src="/images/about-team-3.jpg"
+              src="/images/placeholder.jpg"
               alt="Profesional trabajando"
               fill
               className="object-cover hover:scale-105 transition-transform duration-500"

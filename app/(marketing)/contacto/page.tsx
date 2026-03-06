@@ -133,7 +133,7 @@ export default function ContactoPage() {
 
             <div className="relative h-[300px] md:h-[400px] rounded-3xl overflow-hidden shadow-2xl">
               <Image
-                src="/images/contact-support.jpg"
+                src="/images/placeholder.jpg"
                 alt="Soporte al cliente CyCEC México"
                 fill
                 className="object-cover"
