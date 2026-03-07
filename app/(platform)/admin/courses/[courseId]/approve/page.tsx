@@ -16,7 +16,8 @@ export default async function CourseApprovalPage({
   }
 
   const { courseId } = await params;
-  const supabase = createClient(await cookies());
+
+  const supabase = await createClient();
 
   const { data: course } = await supabase
     .from("courses")
