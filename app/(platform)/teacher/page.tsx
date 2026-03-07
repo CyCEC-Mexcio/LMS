@@ -1,350 +1,186 @@
-// app/(platform)/teacher/page.tsx
 import { createClient } from "@/lib/supabase/server";
 import { getUserProfile } from "@/lib/auth-utils";
 import { redirect } from "next/navigation";
-import { cookies } from "next/headers";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
-import {
-  BookOpen,
-  Users,
-  DollarSign,
-  Eye,
-  Edit,
-  CheckCircle,
-  Clock,
-  XCircle,
-} from "lucide-react";
 
 export default async function TeacherDashboard() {
   const profile = await getUserProfile();
+  if (!profile || profile.role !== "teacher") redirect("/login");
 
-  if (!profile || profile.role !== "teacher") {
-    redirect("/login");
-  }
+  const supabase = await createClient();
 
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
-
-  // Get all courses created by this teacher
   const { data: courses } = await supabase
     .from("courses")
     .select(`
-      *,
-      sections (
-        id,
-        lessons (
-          id
-        )
-      ),
-      enrollments (
-        id,
-        amount_paid
-      )
+      id, title, slug, thumbnail_url, price,
+      is_published, is_approved, pending_approval, submitted_at,
+      created_at,
+      sections ( id, lessons ( id ) ),
+      enrollments ( id, amount_paid )
     `)
     .eq("teacher_id", profile.id)
     .order("created_at", { ascending: false });
 
-  // Calculate statistics
-  const totalCourses = courses?.length || 0;
-  const publishedCourses = courses?.filter((c) => c.is_published && c.is_approved).length || 0;
-  const pendingApproval = courses?.filter((c) => c.pending_approval && !c.is_approved).length || 0;
-  const draftCourses = courses?.filter((c) => !c.is_published && !c.pending_approval).length || 0;
-
-  const totalStudents = courses?.reduce(
-    (acc, course) => acc + (course.enrollments?.length || 0),
-    0
-  ) || 0;
-
-  const totalRevenue = courses?.reduce((acc, course) => {
-    const courseRevenue = course.enrollments?.reduce(
-      (sum: number, enrollment: any) => sum + (Number(enrollment.amount_paid) || 0),
-      0
-    ) || 0;
-    return acc + courseRevenue;
-  }, 0) || 0;
-
-  // Get recent enrollments
   const { data: recentEnrollments } = await supabase
     .from("enrollments")
     .select(`
-      id,
-      purchased_at,
-      amount_paid,
-      profiles!student_id (
-        full_name
-      ),
-      courses!inner (
-        id,
-        title,
-        teacher_id
-      )
+      id, purchased_at, amount_paid,
+      profiles!student_id ( full_name ),
+      courses!inner ( id, title, teacher_id )
     `)
     .eq("courses.teacher_id", profile.id)
     .order("purchased_at", { ascending: false })
     .limit(5);
 
+  const totalCourses = courses?.length ?? 0;
+  const publishedCourses = courses?.filter((c) => c.is_published && c.is_approved).length ?? 0;
+  const pendingApproval = courses?.filter((c) => c.pending_approval && !c.is_approved).length ?? 0;
+  const draftCourses = courses?.filter((c) => !c.is_published && !c.pending_approval && !c.submitted_at).length ?? 0;
+  const totalStudents = courses?.reduce((acc, c) => acc + (c.enrollments?.length ?? 0), 0) ?? 0;
+  const totalRevenue = courses?.reduce((acc, c) =>
+    acc + (c.enrollments?.reduce((s: number, e: any) => s + (Number(e.amount_paid) || 0), 0) ?? 0), 0) ?? 0;
+
+  const getCourseStatus = (course: any) => {
+    if (course.is_published && course.is_approved) return { label: "Publicado", color: "bg-green-100 text-green-700", dot: "bg-green-500" };
+    if (course.pending_approval) return { label: "En revisión", color: "bg-yellow-100 text-yellow-700", dot: "bg-yellow-500" };
+    if (!course.is_approved && course.submitted_at) return { label: "Rechazado", color: "bg-red-100 text-red-600", dot: "bg-red-500" };
+    if (course.is_approved && !course.is_published) return { label: "Aprobado", color: "bg-blue-100 text-blue-700", dot: "bg-blue-500" };
+    return { label: "Borrador", color: "bg-gray-100 text-gray-600", dot: "bg-gray-400" };
+  };
+
+  const stats = [
+    { label: "Total Cursos", value: totalCourses, sub: `${draftCourses} borradores`, icon: "📖", accent: "text-blue-600", ring: "bg-blue-50" },
+    { label: "Publicados", value: publishedCourses, sub: "aprobados y activos", icon: "✅", accent: "text-green-600", ring: "bg-green-50" },
+    { label: "En Revisión", value: pendingApproval, sub: "esperando aprobación", icon: "⏳", accent: "text-yellow-600", ring: "bg-yellow-50" },
+    { label: "Estudiantes", value: totalStudents, sub: "total inscritos", icon: "🎓", accent: "text-purple-600", ring: "bg-purple-50" },
+    { label: "Ingresos", value: `$${totalRevenue.toLocaleString("es-MX")}`, sub: "MXN total", icon: "💰", accent: "text-emerald-600", ring: "bg-emerald-50" },
+  ];
+
+  const actions = [
+    { href: "/teacher/courses/new", icon: "➕", bg: "bg-blue-100", label: "Crear Curso", desc: "Nuevo curso desde cero" },
+    { href: "/teacher/courses", icon: "📚", bg: "bg-green-100", label: "Mis Cursos", desc: "Ver y editar tus cursos" },
+    { href: "/teacher/analytics", icon: "📈", bg: "bg-indigo-100", label: "Analíticas", desc: "Estadísticas detalladas" },
+    { href: "/teacher/earnings", icon: "💰", bg: "bg-emerald-100", label: "Ganancias", desc: "Historial de pagos" },
+    { href: "/teacher/settings", icon: "⚙️", bg: "bg-gray-100", label: "Configuración", desc: "Ajustes de tu cuenta" },
+  ];
+
   return (
-    <div className="p-6 space-y-6">
-      {/* Welcome Section */}
-      <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg p-6">
-        <h1 className="text-3xl font-bold mb-2">
-          Panel de Instructor
-        </h1>
-        <p className="text-purple-100">
-          Bienvenido, {profile.full_name || "Instructor"}
+    <div className="max-w-6xl mx-auto space-y-8">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl p-6">
+        <p className="text-indigo-200 text-sm font-medium mb-1">Panel de Instructor</p>
+        <h1 className="text-2xl font-bold">Bienvenido, {profile.full_name || "Instructor"} 👋</h1>
+        <p className="text-indigo-200 text-sm mt-1">
+          Tienes {totalCourses} curso{totalCourses !== 1 ? "s" : ""} · {totalStudents} estudiante{totalStudents !== 1 ? "s" : ""}
         </p>
       </div>
 
-      {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
-              <BookOpen size={16} />
-              Total de Cursos
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-blue-600">
-              {totalCourses}
+      {/* Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        {stats.map((stat) => (
+          <div key={stat.label} className="bg-white rounded-xl border border-gray-200 p-4 text-center">
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center mx-auto mb-2 ${stat.ring}`}>
+              <span className="text-xl">{stat.icon}</span>
             </div>
-            <p className="text-xs text-gray-500 mt-1">
-              {publishedCourses} publicados
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
-              <Users size={16} />
-              Estudiantes
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-green-600">
-              {totalStudents}
-            </div>
-            <p className="text-xs text-gray-500 mt-1">Total inscritos</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
-              <DollarSign size={16} />
-              Ingresos Totales
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-purple-600">
-              ${totalRevenue.toLocaleString("es-MX")}
-            </div>
-            <p className="text-xs text-gray-500 mt-1">MXN</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
-              <Clock size={16} />
-              Pendientes
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-orange-600">
-              {pendingApproval}
-            </div>
-            <p className="text-xs text-gray-500 mt-1">En revisión</p>
-          </CardContent>
-        </Card>
+            <p className={`text-2xl font-bold ${stat.accent}`}>{stat.value}</p>
+            <p className="text-xs font-medium text-gray-700 mt-0.5">{stat.label}</p>
+            <p className="text-xs text-gray-400">{stat.sub}</p>
+          </div>
+        ))}
       </div>
 
-      {/* Quick Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Acciones Rápidas</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-3">
-            <Link href="/teacher/courses/new">
-              <Button>
-                <BookOpen className="w-4 h-4 mr-2" />
-                Crear Nuevo Curso
-              </Button>
-            </Link>
-            <Link href="/teacher/analytics">
-              <Button variant="outline">
-                <Eye className="w-4 h-4 mr-2" />
-                Ver Analíticas
-              </Button>
-            </Link>
-            <Link href="/teacher/earnings">
-              <Button variant="outline">
-                <DollarSign className="w-4 h-4 mr-2" />
-                Ver Ganancias
-              </Button>
-            </Link>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* My Courses */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Mis Cursos</CardTitle>
-            <Link href="/teacher/courses/new">
-              <Button size="sm">Crear Curso</Button>
-            </Link>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {!courses || courses.length === 0 ? (
-            <div className="text-center py-12">
-              <BookOpen className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">
-                No tienes cursos creados
-              </h3>
-              <p className="text-gray-600 mb-4">
-                Crea tu primer curso y comienza a compartir tu conocimiento
-              </p>
-              <Link href="/teacher/courses/new">
-                <Button>Crear Primer Curso</Button>
-              </Link>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {courses.map((course: any) => {
-                const totalLessons = course.sections?.reduce(
-                  (acc: number, section: any) => acc + (section.lessons?.length || 0),
-                  0
-                ) || 0;
-                const studentCount = course.enrollments?.length || 0;
-                const revenue = course.enrollments?.reduce(
-                  (sum: number, e: any) => sum + (Number(e.amount_paid) || 0),
-                  0
-                ) || 0;
-
-                return (
-                  <div
-                    key={course.id}
-                    className="flex items-center gap-4 p-4 border rounded-lg hover:shadow-md transition-shadow"
-                  >
-                    {course.thumbnail_url && (
-                      <img
-                        src={course.thumbnail_url}
-                        alt={course.title}
-                        className="w-32 h-20 object-cover rounded"
-                      />
-                    )}
-
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between mb-2">
-                        <div>
-                          <h3 className="font-semibold text-lg">{course.title}</h3>
-                          <p className="text-sm text-gray-600">
-                            {totalLessons} lecciones • {studentCount} estudiantes
-                          </p>
-                        </div>
-
-                        <div className="flex gap-2">
-                          {course.is_published && course.is_approved ? (
-                            <Badge className="bg-green-100 text-green-800">
-                              <CheckCircle className="w-3 h-3 mr-1" />
-                              Publicado
-                            </Badge>
-                          ) : course.pending_approval ? (
-                            <Badge className="bg-orange-100 text-orange-800">
-                              <Clock className="w-3 h-3 mr-1" />
-                              Pendiente
-                            </Badge>
-                          ) : !course.is_approved && course.submitted_at ? (
-                            <Badge className="bg-red-100 text-red-800">
-                              <XCircle className="w-3 h-3 mr-1" />
-                              Rechazado
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline">Borrador</Badge>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
-                        <span className="flex items-center gap-1">
-                          <DollarSign size={14} />
-                          ${revenue.toLocaleString("es-MX")} MXN
-                        </span>
-                        <span>
-                          Precio: ${Number(course.price).toLocaleString("es-MX")} MXN
-                        </span>
-                      </div>
-
-                      <div className="flex gap-2">
-                        <Link href={`/teacher/courses/${course.id}`}>
-                          <Button size="sm" variant="outline">
-                            <Edit className="w-4 h-4 mr-1" />
-                            Editar
-                          </Button>
-                        </Link>
-                        {course.is_published && course.is_approved && (
-                          <Link href={`/browse/${course.slug}`}>
-                            <Button size="sm" variant="outline">
-                              <Eye className="w-4 h-4 mr-1" />
-                              Ver Curso
-                            </Button>
-                          </Link>
-                        )}
-                      </div>
-                    </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Quick Actions */}
+        <div>
+          <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Acciones Rápidas</h2>
+          <div className="space-y-2">
+            {actions.map((action) => (
+              <Link key={action.href} href={action.href}>
+                <div className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-3 hover:shadow-md transition-shadow">
+                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${action.bg}`}>
+                    <span className="text-lg">{action.icon}</span>
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Recent Enrollments */}
-      {recentEnrollments && recentEnrollments.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Inscripciones Recientes</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {recentEnrollments.map((enrollment: any) => (
-                <div
-                  key={enrollment.id}
-                  className="flex items-center justify-between p-3 bg-gray-50 rounded"
-                >
                   <div>
-                    <p className="font-medium">
-                      {enrollment.profiles?.full_name || "Usuario"}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      {enrollment.courses.title}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-semibold text-green-600">
-                      ${Number(enrollment.amount_paid).toLocaleString("es-MX")}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {new Date(enrollment.purchased_at).toLocaleDateString(
-                        "es-MX"
-                      )}
-                    </p>
+                    <p className="text-sm font-semibold text-gray-900">{action.label}</p>
+                    <p className="text-xs text-gray-500">{action.desc}</p>
                   </div>
                 </div>
-              ))}
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        {/* Courses + Recent Enrollments */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* My Courses */}
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Mis Cursos</h2>
+              <Link href="/teacher/courses" className="text-xs text-blue-600 hover:underline">Ver todos →</Link>
             </div>
-          </CardContent>
-        </Card>
-      )}
+            <div className="bg-white rounded-xl border border-gray-200 divide-y divide-gray-100">
+              {!courses || courses.length === 0 ? (
+                <div className="text-center py-12 text-gray-400">
+                  <p className="text-3xl mb-2">📭</p>
+                  <p className="text-sm mb-3">Aún no tienes cursos</p>
+                  <Link href="/teacher/courses/new" className="text-xs text-blue-600 hover:underline font-medium">
+                    Crear primer curso →
+                  </Link>
+                </div>
+              ) : (
+                courses.slice(0, 5).map((course: any) => {
+                  const { label, color, dot } = getCourseStatus(course);
+                  const lessons = course.sections?.reduce((a: number, s: any) => a + (s.lessons?.length ?? 0), 0) ?? 0;
+                  const students = course.enrollments?.length ?? 0;
+                  return (
+                    <div key={course.id} className="flex items-center gap-4 p-4 hover:bg-gray-50 transition-colors">
+                      <div className="w-12 h-10 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                        {course.thumbnail_url
+                          ? <img src={course.thumbnail_url} alt={course.title} className="w-full h-full object-cover" />
+                          : <div className="w-full h-full flex items-center justify-center text-lg">📖</div>
+                        }
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">{course.title}</p>
+                        <p className="text-xs text-gray-400">{lessons} lecciones · {students} estudiantes</p>
+                      </div>
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${color}`}>{label}</span>
+                      <Link href={`/teacher/courses/${course.id}`} className="text-xs text-blue-600 hover:text-blue-800 font-medium px-2 py-1 rounded hover:bg-blue-50 transition-colors flex-shrink-0">
+                        Editar →
+                      </Link>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+
+          {/* Recent Enrollments */}
+          {recentEnrollments && recentEnrollments.length > 0 && (
+            <div>
+              <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Inscripciones Recientes</h2>
+              <div className="bg-white rounded-xl border border-gray-200 divide-y divide-gray-100">
+                {recentEnrollments.map((enrollment: any) => (
+                  <div key={enrollment.id} className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors">
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">{enrollment.profiles?.full_name || "Usuario"}</p>
+                      <p className="text-xs text-gray-400">{enrollment.courses?.title}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-semibold text-emerald-600">
+                        ${Number(enrollment.amount_paid).toLocaleString("es-MX")} MXN
+                      </p>
+                      <p className="text-xs text-gray-400">
+                        {new Date(enrollment.purchased_at).toLocaleDateString("es-MX", { month: "short", day: "numeric", year: "numeric" })}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

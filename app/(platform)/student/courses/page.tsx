@@ -20,8 +20,7 @@ export default async function StudentCoursesPage() {
   const profile = await getUserProfile();
   if (!profile) redirect("/login");
 
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = await createClient();
 
   // Fetch enrollments with full course + section/lesson structure for progress calc
   const { data: enrollments } = await supabase

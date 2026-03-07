@@ -15,8 +15,7 @@ export default async function StudentDashboard() {
     redirect("/login");
   }
 
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = await createClient();
 
   // Get enrolled courses with progress
   const { data: enrollments } = await supabase

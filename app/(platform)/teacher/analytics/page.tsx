@@ -21,8 +21,7 @@ export default async function TeacherAnalyticsPage() {
     redirect("/login");
   }
 
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = await createClient();
 
   // Get all courses with detailed analytics
   const { data: courses } = await supabase

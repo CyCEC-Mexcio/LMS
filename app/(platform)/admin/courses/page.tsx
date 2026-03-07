@@ -6,7 +6,7 @@ import PublishToggle from "@/components/course/publish-toggle";
 import DeleteCourseButton from "@/components/course/delete-course-button";
 
 export default async function AdminCoursesPage() {
-  const supabase = createClient(await cookies());
+  const supabase = await createClient();
 
   const { data: courses } = await supabase
     .from("courses")

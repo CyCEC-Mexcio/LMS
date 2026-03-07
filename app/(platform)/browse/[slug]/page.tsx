@@ -14,7 +14,7 @@ export default async function CourseDetailPage({
 }: {
   params: Promise<{ slug: string }>;
 }) {
-  const supabase = createClient(await cookies());
+  const supabase = await createClient();
   const { slug } = await params;
 
   const { data: course } = await supabase

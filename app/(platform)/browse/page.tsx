@@ -11,7 +11,7 @@ export default async function BrowsePage({
 }: {
   searchParams: Promise<{ category?: string; search?: string }>;
 }) {
-  const supabase = createClient(await cookies());
+  const supabase = await createClient();
 
   const params = await searchParams;
 

@@ -1,10 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
-import { cookies } from "next/headers";
 import { cache } from "react";
 
 export const getCurrentUser = cache(async () => {
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -15,8 +13,7 @@ export const getUserProfile = cache(async () => {
   const user = await getCurrentUser();
   if (!user) return null;
 
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = await createClient();
   const { data: profile } = await supabase
     .from("profiles")
     .select("*")

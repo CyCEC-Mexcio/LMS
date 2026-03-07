@@ -8,8 +8,7 @@ export async function DELETE(
   { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
-    const cookieStore = await cookies();
-    const supabase = createClient(cookieStore);
+    const supabase = await createClient();
     
     // Check if user is admin
     const { data: { user } } = await supabase.auth.getUser();

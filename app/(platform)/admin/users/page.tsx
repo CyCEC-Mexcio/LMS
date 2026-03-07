@@ -21,8 +21,7 @@ export default async function AdminUsersPage({
   // AWAIT searchParams since it's a Promise in Next.js 15+
   const params = await searchParams;
 
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = await createClient();
 
   // Build query
   let query = supabase

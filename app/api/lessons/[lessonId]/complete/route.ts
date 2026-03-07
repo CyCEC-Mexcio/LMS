@@ -11,8 +11,7 @@ export async function POST(
     const { lessonId } = await params; // ✅ await params
 
     // ✅ FIX 1: use createClient(cookieStore) not createRouteHandlerClient
-    const cookieStore = await cookies();
-    const supabase = createClient(cookieStore);
+    const supabase = await createClient();
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {

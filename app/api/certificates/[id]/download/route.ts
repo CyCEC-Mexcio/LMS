@@ -13,8 +13,7 @@ export async function GET(
   try {
     const { id } = await params; // ✅ Must await before use
 
-    const cookieStore = await cookies();
-    const supabase = createClient(cookieStore);
+    const supabase = await createClient();
 
     // Auth check
     const {

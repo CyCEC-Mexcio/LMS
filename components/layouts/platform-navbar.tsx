@@ -8,8 +8,7 @@ import { Bell } from "lucide-react";
 import UserAvatarDropdown from "./user-avatar-dropdown";
 
 export default async function PlatformNavbar() {
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
   const profile = await getUserProfile();

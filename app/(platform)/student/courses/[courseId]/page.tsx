@@ -19,8 +19,7 @@ export default async function TakeCourse({
     redirect(`/login?redirect=/student/courses/${courseId}`);
   }
 
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = await createClient();
 
   // Get course by slug or ID
   const { data: course } = await supabase

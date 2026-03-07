@@ -6,8 +6,7 @@ import { createClient } from '@/lib/supabase/server';
 export async function GET(req: NextRequest) {
   try {
     // ✅ cookieStore required — without it createClient crashes
-    const cookieStore = await cookies();
-    const supabase = createClient(cookieStore);
+    const supabase = await createClient();
 
     // Auth + admin check
     const { data: { user }, error: authError } = await supabase.auth.getUser();

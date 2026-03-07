@@ -18,8 +18,7 @@ export default async function StudentCertificatesPage() {
 
   // ✅ FIX: Always pass cookieStore to createClient — without it the server
   // client crashes with "Cannot read properties of undefined (reading 'getAll')"
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = await createClient();
 
   const { data: certificates, error } = await supabase
     .from("certificates")

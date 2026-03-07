@@ -16,8 +16,7 @@ export default async function StudentProgressPage() {
     redirect("/login");
   }
 
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = await createClient();
 
   // Get all enrollments
   const { data: enrollments } = await supabase

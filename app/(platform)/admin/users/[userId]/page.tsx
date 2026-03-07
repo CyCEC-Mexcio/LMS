@@ -28,8 +28,7 @@ export default async function UserDetailsPage({
   }
 
   const { userId } = await params;
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = await createClient();
 
   // Get user profile
   const { data: selectedUser } = await supabase

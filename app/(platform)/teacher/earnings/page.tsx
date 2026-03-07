@@ -16,8 +16,7 @@ export default async function TeacherEarningsPage() {
     redirect("/login");
   }
 
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = await createClient();
 
   // Check Stripe Connect status
   const hasStripeAccount = !!profile.stripe_account_id;

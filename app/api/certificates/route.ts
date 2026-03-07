@@ -1,13 +1,9 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 
 export async function POST(request: Request) {
   try {
-    // ✅ FIX 1: Always pass cookieStore — calling createClient() without it
-    // crashes with "Cannot read properties of undefined (reading 'getAll')"
-    const cookieStore = await cookies();
-    const supabase = createClient(cookieStore);
+    const supabase = await createClient();
 
     const { courseId, studentId } = await request.json();
 
@@ -18,7 +14,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // Get course info
     const { data: course } = await supabase
       .from("courses")
       .select("id, title, instructor_name")
@@ -29,9 +24,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Course not found" }, { status: 404 });
     }
 
-    // ✅ FIX 2: Get sections first, then lessons separately.
-    // The nested query .select(`lessons (id)`) doesn't work when lessons
-    // use section_id as a foreign key — it returns null for each section.
     const { data: sections } = await supabase
       .from("sections")
       .select("id")
@@ -46,7 +38,6 @@ export async function POST(request: Request) {
 
     const sectionIds = sections.map((s: any) => s.id);
 
-    // ✅ FIX 3: Query lessons by section_id, not as a nested relation
     const { data: lessons } = await supabase
       .from("lessons")
       .select("id, has_quiz")
@@ -61,7 +52,6 @@ export async function POST(request: Request) {
 
     const lessonIds = lessons.map((l: any) => l.id);
 
-    // Check if student has completed all lessons
     const { data: progress } = await supabase
       .from("progress")
       .select("lesson_id, is_completed")
@@ -81,17 +71,13 @@ export async function POST(request: Request) {
       );
     }
 
-    // Check if student passed all quizzes
     const lessonsWithQuiz = lessons.filter((l: any) => l.has_quiz);
 
     if (lessonsWithQuiz.length > 0) {
       const { data: quizzes } = await supabase
         .from("quizzes")
         .select("id")
-        .in(
-          "lesson_id",
-          lessonsWithQuiz.map((l: any) => l.id)
-        );
+        .in("lesson_id", lessonsWithQuiz.map((l: any) => l.id));
 
       if (quizzes && quizzes.length > 0) {
         const quizIds = quizzes.map((q) => q.id);
@@ -116,29 +102,22 @@ export async function POST(request: Request) {
       }
     }
 
-    // Check if certificate already exists — return it if so
     const { data: existingCert } = await supabase
       .from("certificates")
-      .select(`
-        *,
-        student:profiles!student_id (full_name),
-        course:courses (title, instructor_name, organization)
-      `)
+      .select(`*, student:profiles!student_id (full_name), course:courses (title, instructor_name, organization)`)
       .eq("student_id", studentId)
       .eq("course_id", courseId)
-      .maybeSingle(); // ✅ Use maybeSingle() instead of single() to avoid error when no row exists
+      .maybeSingle();
 
     if (existingCert) {
       return NextResponse.json({ certificate: existingCert });
     }
 
-    // Generate unique certificate number
     const certificateNumber = `CERT-${Date.now()}-${Math.random()
       .toString(36)
       .substring(2, 9)
       .toUpperCase()}`;
 
-    // Create certificate
     const { data: certificate, error: insertError } = await supabase
       .from("certificates")
       .insert({
@@ -146,11 +125,7 @@ export async function POST(request: Request) {
         course_id: courseId,
         certificate_number: certificateNumber,
       })
-      .select(`
-        *,
-        student:profiles!student_id (full_name, email),
-        course:courses (title, instructor_name, organization)
-      `)
+      .select(`*, student:profiles!student_id (full_name, email), course:courses (title, instructor_name, organization)`)
       .single();
 
     if (insertError) {
@@ -164,17 +139,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ certificate });
   } catch (error) {
     console.error("Unexpected error in certificate generation:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
 export async function GET(request: Request) {
   try {
-    const cookieStore = await cookies();
-    const supabase = createClient(cookieStore);
+    const supabase = await createClient();
     const { searchParams } = new URL(request.url);
     const certificateNumber = searchParams.get("certificateNumber");
 
@@ -187,27 +158,17 @@ export async function GET(request: Request) {
 
     const { data: certificate, error } = await supabase
       .from("certificates")
-      .select(`
-        *,
-        student:profiles!student_id (full_name, email),
-        course:courses (title, instructor_name, organization)
-      `)
+      .select(`*, student:profiles!student_id (full_name, email), course:courses (title, instructor_name, organization)`)
       .eq("certificate_number", certificateNumber)
       .maybeSingle();
 
     if (error || !certificate) {
-      return NextResponse.json(
-        { error: "Certificate not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Certificate not found" }, { status: 404 });
     }
 
     return NextResponse.json({ certificate });
   } catch (error) {
     console.error("Error verifying certificate:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

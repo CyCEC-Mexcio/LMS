@@ -10,8 +10,7 @@ export async function POST(request: Request) {
     const { email, fullName, message } = await request.json();
 
     // Get cookies and create Supabase client
-    const cookieStore = await cookies();
-    const supabase = createClient(cookieStore);
+    const supabase = await createClient();
 
     // Verify the requester is an admin
     const {

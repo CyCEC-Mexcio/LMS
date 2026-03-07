@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
 export default async function PendingCoursesPage() {
-  const supabase = createClient(await cookies());
+  const supabase = await createClient();
 
   const { data: pendingCourses } = await supabase
     .from("courses")

@@ -17,8 +17,7 @@ export default async function CertificateViewPage({
   const profile = await getUserProfile();
   if (!profile) redirect("/login");
 
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = await createClient();
 
   const { data: cert, error } = await supabase
     .from("certificates")

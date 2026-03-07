@@ -13,8 +13,7 @@ export async function POST(req: NextRequest) {
   
   try {
     // Create Supabase client for API routes (Next.js 15)
-    const cookieStore = await cookies();
-    const supabase = createClient(cookieStore);
+    const supabase = await createClient();
     
     // Get authenticated user
     const { data: { user }, error: authError } = await supabase.auth.getUser();

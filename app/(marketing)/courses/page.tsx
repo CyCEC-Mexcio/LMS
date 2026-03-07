@@ -28,8 +28,7 @@ export default async function PublicCoursesPage({
 }) {
   const { category, level, q } = await searchParams;
 
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = await createClient();
 
   let query = supabase
     .from("courses")

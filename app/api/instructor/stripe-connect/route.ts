@@ -13,8 +13,7 @@ export async function POST(req: NextRequest) {
   try {
     // ✅ FIX: pass cookieStore — calling createClient() without it crashes
     // with "Cannot read properties of undefined (reading 'getAll')"
-    const cookieStore = await cookies();
-    const supabase = createClient(cookieStore);
+    const supabase = await createClient();
 
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
@@ -97,9 +96,7 @@ export async function POST(req: NextRequest) {
 // GET /api/instructor/stripe-connect
 export async function GET(req: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const supabase = createClient(cookieStore);
-
+    const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
