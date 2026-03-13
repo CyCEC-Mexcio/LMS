@@ -36,6 +36,7 @@ import {
   Clock,
   X,
   Image as ImageIcon,
+  Eye,
 } from "lucide-react";
 
 type Chapter = {
@@ -363,11 +364,10 @@ function CertificateSettings({
           <div className="grid grid-cols-2 gap-3">
             <button
               onClick={() => setType("constancia")}
-              className={`p-4 border-2 rounded-lg transition-all ${
-                type === "constancia"
+              className={`p-4 border-2 rounded-lg transition-all ${type === "constancia"
                   ? "border-sky-600 bg-sky-50"
                   : "border-gray-200 hover:border-sky-300"
-              }`}
+                }`}
             >
               <div className="text-left">
                 <div className="font-semibold text-sm mb-1">Constancia</div>
@@ -382,11 +382,10 @@ function CertificateSettings({
 
             <button
               onClick={() => setType("certificate")}
-              className={`p-4 border-2 rounded-lg transition-all ${
-                type === "certificate"
+              className={`p-4 border-2 rounded-lg transition-all ${type === "certificate"
                   ? "border-sky-600 bg-sky-50"
                   : "border-gray-200 hover:border-sky-300"
-              }`}
+                }`}
             >
               <div className="text-left">
                 <div className="font-semibold text-sm mb-1">Certificado</div>
@@ -516,6 +515,9 @@ export default function UnifiedCourseEditor({
     price: 0,
   });
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
+  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
+  const [thumbnailUrl, setThumbnailUrl] = useState("");
+  const [thumbnailInputMode, setThumbnailInputMode] = useState<"file" | "url">("file");
   const [creating, setCreating] = useState(false);
   const [creationError, setCreationError] = useState<string | null>(null);
 
@@ -645,10 +647,12 @@ export default function UnifiedCourseEditor({
     setCreationError(null);
 
     try {
-      let thumbnailUrl = "";
+      let finalThumbnailUrl = "";
 
       if (thumbnailFile) {
-        thumbnailUrl = await handleThumbnailUpload(thumbnailFile);
+        finalThumbnailUrl = await handleThumbnailUpload(thumbnailFile);
+      } else if (thumbnailUrl.trim()) {
+        finalThumbnailUrl = thumbnailUrl.trim();
       }
 
       const {
@@ -671,7 +675,7 @@ export default function UnifiedCourseEditor({
         instructor_name: creationFormData.instructor_name,
         category: creationFormData.category,
         level: creationFormData.level,
-        thumbnail_url: thumbnailUrl || null,
+        thumbnail_url: finalThumbnailUrl || null,
         price: creationFormData.price,
         currency: "MXN",
         slug: slug,
@@ -1060,177 +1064,478 @@ export default function UnifiedCourseEditor({
 
   // ===== CREATION MODE (No courseId) =====
   if (!courseId) {
+    const isCreationFormValid =
+      creationFormData.title &&
+      creationFormData.description &&
+      creationFormData.instructor_name &&
+      creationFormData.category;
+
+    const handleFileSelect = (file: File) => {
+      setThumbnailFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => setThumbnailPreview(reader.result as string);
+      reader.readAsDataURL(file);
+    };
+
+    const clearThumbnail = () => {
+      setThumbnailFile(null);
+      setThumbnailPreview(null);
+      setThumbnailUrl("");
+    };
+
     return (
-      <div className="max-w-3xl mx-auto p-6">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Crear Nuevo Curso
-          </h1>
-          <p className="text-gray-600">
-            Completa la información básica para comenzar. Podrás agregar
-            capítulos y lecciones después.
-          </p>
+      <div className="min-h-screen bg-muted/30">
+        {/* Header */}
+        <div className="border-b border-border bg-background">
+          <div className="max-w-7xl mx-auto px-6 py-5">
+            <h1 className="text-2xl font-bold text-foreground">
+              Crear Nuevo Curso
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              {isAdmin
+                ? 'Completa la información para crear el curso. Se aprobará automáticamente.'
+                : 'Completa la información para crear el curso. Será enviado para aprobación.'}
+            </p>
+          </div>
         </div>
 
-        <form onSubmit={handleCreateCourse} className="space-y-6">
-          {creationError && (
-            <Alert className="border-red-200 bg-red-50">
-              <AlertTriangle className="h-4 w-4 text-red-600" />
-              <AlertDescription className="text-red-800">
-                {creationError}
-              </AlertDescription>
-            </Alert>
-          )}
+        <div className="max-w-7xl mx-auto px-6 py-8">
+          <form onSubmit={handleCreateCourse}>
+            {creationError && (
+              <Alert className="border-red-200 bg-red-50 mb-6">
+                <AlertTriangle className="h-4 w-4 text-red-600" />
+                <AlertDescription className="text-red-800">
+                  {creationError}
+                </AlertDescription>
+              </Alert>
+            )}
 
-          <div>
-            <label className="block text-sm font-medium mb-1">
-              Título del Curso *
-            </label>
-            <Input
-              value={creationFormData.title}
-              onChange={(e) =>
-                setCreationFormData({ ...creationFormData, title: e.target.value })
-              }
-              placeholder="Ej: Introducción a Python"
-              required
-              disabled={creating}
-            />
-          </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Column 1 - Basic Info */}
+              <div className="space-y-5">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-sky-100 rounded-lg">
+                    <LayoutGrid className="w-5 h-5 text-sky-600" />
+                  </div>
+                  <h2 className="text-lg font-semibold text-foreground">
+                    Información Básica
+                  </h2>
+                </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-1">
-              Descripción *
-            </label>
-            <Textarea
-              value={creationFormData.description}
-              onChange={(e) =>
-                setCreationFormData({
-                  ...creationFormData,
-                  description: e.target.value,
-                })
-              }
-              placeholder="Describe de qué trata el curso..."
-              required
-              disabled={creating}
-              rows={5}
-            />
-          </div>
+                <div className="bg-card rounded-xl border border-border p-5 space-y-4">
+                  {/* Title */}
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">
+                      Título del Curso *
+                    </label>
+                    <Input
+                      value={creationFormData.title}
+                      onChange={(e) =>
+                        setCreationFormData({ ...creationFormData, title: e.target.value })
+                      }
+                      placeholder="Ej: Introducción a Python"
+                      required
+                      disabled={creating}
+                      className="mt-1.5"
+                    />
+                  </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-1">Organización</label>
-            <Input
-              value={creationFormData.organization}
-              onChange={(e) =>
-                setCreationFormData({
-                  ...creationFormData,
-                  organization: e.target.value,
-                })
-              }
-              placeholder="Ej: Google, Microsoft, o deja vacío para 'Independiente'"
-              disabled={creating}
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Opcional - Si lo dejas vacío se mostrará como "Independiente"
-            </p>
-          </div>
+                  {/* Description */}
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">
+                      Descripción *
+                    </label>
+                    <Textarea
+                      value={creationFormData.description}
+                      onChange={(e) =>
+                        setCreationFormData({
+                          ...creationFormData,
+                          description: e.target.value,
+                        })
+                      }
+                      placeholder="Describe de qué trata el curso..."
+                      required
+                      disabled={creating}
+                      rows={4}
+                      className="mt-1.5"
+                    />
+                  </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-1">
-              Nombre del Instructor *
-            </label>
-            <Input
-              value={creationFormData.instructor_name}
-              onChange={(e) =>
-                setCreationFormData({
-                  ...creationFormData,
-                  instructor_name: e.target.value,
-                })
-              }
-              placeholder="Tu nombre completo"
-              required
-              disabled={creating}
-            />
-          </div>
+                  {/* Organization */}
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">
+                      Organización
+                    </label>
+                    <Input
+                      value={creationFormData.organization}
+                      onChange={(e) =>
+                        setCreationFormData({
+                          ...creationFormData,
+                          organization: e.target.value,
+                        })
+                      }
+                      placeholder="Ej: Google"
+                      disabled={creating}
+                      className="mt-1.5"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Opcional — se mostrará como "Independiente" si está vacío
+                    </p>
+                  </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                Categoría *
-              </label>
-              <select
-                value={creationFormData.category}
-                onChange={(e) =>
-                  setCreationFormData({
-                    ...creationFormData,
-                    category: e.target.value,
-                  })
-                }
-                required
-                disabled={creating}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Selecciona una categoría</option>
-                {categories.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
-                  </option>
-                ))}
-              </select>
+                  {/* Instructor */}
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">
+                      Nombre del Instructor *
+                    </label>
+                    <Input
+                      value={creationFormData.instructor_name}
+                      onChange={(e) =>
+                        setCreationFormData({
+                          ...creationFormData,
+                          instructor_name: e.target.value,
+                        })
+                      }
+                      placeholder="Tu nombre completo"
+                      required
+                      disabled={creating}
+                      className="mt-1.5"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Column 2 - Details, Price & Thumbnail */}
+              <div className="space-y-5">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-sky-100 rounded-lg">
+                    <ListChecks className="w-5 h-5 text-sky-600" />
+                  </div>
+                  <h2 className="text-lg font-semibold text-foreground">
+                    Detalles del Curso
+                  </h2>
+                </div>
+
+                {/* Category & Level */}
+                <div className="bg-card rounded-xl border border-border p-5 space-y-4">
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">
+                      Categoría *
+                    </label>
+                    <select
+                      value={creationFormData.category}
+                      onChange={(e) =>
+                        setCreationFormData({
+                          ...creationFormData,
+                          category: e.target.value,
+                        })
+                      }
+                      required
+                      disabled={creating}
+                      className="w-full mt-1.5 px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-sky-500"
+                    >
+                      <option value="">Selecciona una categoría</option>
+                      {categories.map((cat) => (
+                        <option key={cat} value={cat}>
+                          {cat}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">
+                      Nivel *
+                    </label>
+                    <select
+                      value={creationFormData.level}
+                      onChange={(e) =>
+                        setCreationFormData({
+                          ...creationFormData,
+                          level: e.target.value,
+                        })
+                      }
+                      required
+                      disabled={creating}
+                      className="w-full mt-1.5 px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-sky-500"
+                    >
+                      <option value="beginner">Principiante</option>
+                      <option value="intermediate">Intermedio</option>
+                      <option value="advanced">Avanzado</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Price */}
+                <div className="bg-card rounded-xl border border-border p-5">
+                  <div className="flex items-center gap-2 mb-2">
+                    <DollarSign className="w-4 h-4 text-sky-600" />
+                    <label className="text-sm font-medium text-muted-foreground">
+                      Precio (MXN)
+                    </label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-muted-foreground">$</span>
+                    <Input
+                      type="number"
+                      value={creationFormData.price}
+                      onChange={(e) =>
+                        setCreationFormData({
+                          ...creationFormData,
+                          price: parseFloat(e.target.value),
+                        })
+                      }
+                      min="0"
+                      step="0.01"
+                      disabled={creating}
+                      className="flex-1"
+                    />
+                    <span className="text-muted-foreground text-sm">MXN</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Puedes cambiarlo después. Déjalo en 0 para cursos gratuitos.
+                  </p>
+                </div>
+
+                {/* Thumbnail - Enhanced */}
+                <div className="bg-card rounded-xl border border-border p-5">
+                  <div className="flex items-center justify-between mb-3">
+                    <label className="text-sm font-medium text-muted-foreground">
+                      Imagen de Portada
+                    </label>
+                    <div className="flex gap-1 bg-muted rounded-lg p-0.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setThumbnailInputMode("file");
+                          setThumbnailUrl("");
+                        }}
+                        className={`px-2.5 py-1 text-xs rounded-md transition-colors ${
+                          thumbnailInputMode === "file"
+                            ? "bg-background text-foreground shadow-sm font-medium"
+                            : "text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        <Upload className="w-3 h-3 inline mr-1" />
+                        Archivo
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setThumbnailInputMode("url");
+                          setThumbnailFile(null);
+                          setThumbnailPreview(null);
+                        }}
+                        className={`px-2.5 py-1 text-xs rounded-md transition-colors ${
+                          thumbnailInputMode === "url"
+                            ? "bg-background text-foreground shadow-sm font-medium"
+                            : "text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        🔗 URL
+                      </button>
+                    </div>
+                  </div>
+
+                  {thumbnailInputMode === "file" ? (
+                    <>
+                      {thumbnailPreview ? (
+                        <div className="space-y-3">
+                          <div className="relative rounded-lg overflow-hidden border border-border aspect-video bg-muted">
+                            <img
+                              src={thumbnailPreview}
+                              alt="Vista previa"
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <div className="flex gap-2">
+                            <label className="flex-1 cursor-pointer">
+                              <div className="flex items-center justify-center gap-2 px-3 py-2 border border-border rounded-md text-sm text-muted-foreground hover:bg-muted transition-colors">
+                                <Pencil className="w-3.5 h-3.5" />
+                                Cambiar imagen
+                              </div>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) handleFileSelect(file);
+                                }}
+                                disabled={creating}
+                              />
+                            </label>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={clearThumbnail}
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                            >
+                              <Trash2 className="w-3.5 h-3.5 mr-1" />
+                              Eliminar
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <label className="cursor-pointer block">
+                          <div className="flex flex-col items-center justify-center gap-2 p-6 border-2 border-dashed border-gray-300 rounded-lg hover:border-sky-400 hover:bg-sky-50/50 transition-all">
+                            <div className="p-2 bg-sky-100 rounded-full">
+                              <ImageIcon className="w-6 h-6 text-sky-600" />
+                            </div>
+                            <span className="text-sm text-muted-foreground">
+                              Haz clic para subir imagen
+                            </span>
+                            <span className="text-xs text-muted-foreground/70">
+                              PNG, JPG • 1280×720px (16:9)
+                            </span>
+                          </div>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) handleFileSelect(file);
+                            }}
+                            disabled={creating}
+                          />
+                        </label>
+                      )}
+                    </>
+                  ) : (
+                    <div className="space-y-3">
+                      <Input
+                        value={thumbnailUrl}
+                        onChange={(e) => setThumbnailUrl(e.target.value)}
+                        placeholder="https://ejemplo.com/imagen.jpg"
+                        disabled={creating}
+                        type="url"
+                      />
+                      {thumbnailUrl.trim() && (
+                        <div className="space-y-2">
+                          <div className="relative rounded-lg overflow-hidden border border-border aspect-video bg-muted">
+                            <img
+                              src={thumbnailUrl}
+                              alt="Vista previa"
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).style.display = 'none';
+                              }}
+                              onLoad={(e) => {
+                                (e.target as HTMLImageElement).style.display = 'block';
+                              }}
+                            />
+                          </div>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setThumbnailUrl("")}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 w-full"
+                          >
+                            <Trash2 className="w-3.5 h-3.5 mr-1" />
+                            Quitar URL
+                          </Button>
+                        </div>
+                      )}
+                      <p className="text-xs text-muted-foreground">
+                        Pega el enlace directo a una imagen
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Column 3 - Summary & Actions */}
+              <div className="space-y-5">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-sky-100 rounded-lg">
+                    <Paperclip className="w-5 h-5 text-sky-600" />
+                  </div>
+                  <h2 className="text-lg font-semibold text-foreground">
+                    Resumen
+                  </h2>
+                </div>
+
+                {/* Required fields checklist */}
+                <div className="bg-card rounded-xl border border-border p-5">
+                  <h3 className="text-sm font-medium text-foreground mb-3">
+                    Campos requeridos
+                  </h3>
+                  <ul className="text-sm space-y-2.5">
+                    {[
+                      { label: "Título del curso", filled: !!creationFormData.title },
+                      { label: "Descripción", filled: !!creationFormData.description },
+                      { label: "Nombre del instructor", filled: !!creationFormData.instructor_name },
+                      { label: "Categoría", filled: !!creationFormData.category },
+                    ].map((item) => (
+                      <li key={item.label} className="flex items-center gap-2">
+                        {item.filled ? (
+                          <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
+                        ) : (
+                          <div className="w-4 h-4 rounded-full border-2 border-gray-300 flex-shrink-0" />
+                        )}
+                        <span className={item.filled ? 'text-green-700' : 'text-muted-foreground'}>
+                          {item.label}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Next steps */}
+                <div className="bg-sky-50 border border-sky-200 rounded-xl p-5">
+                  <h3 className="font-medium text-sky-900 mb-3">
+                    Después podrás:
+                  </h3>
+                  <ul className="text-sm text-sky-800 space-y-2">
+                    {[
+                      "Agregar capítulos y lecciones",
+                      "Subir videos (YouTube, Mux o embed)",
+                      "Crear quizzes para cada lección",
+                      "Añadir recursos y archivos adjuntos",
+                      "Configurar certificados o constancias",
+                      isAdmin ? "Publicar cuando esté listo" : "Enviar para aprobación",
+                    ].map((text) => (
+                      <li key={text} className="flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4 text-sky-600 flex-shrink-0" />
+                        {text}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Actions */}
+                <div className="space-y-3 sticky top-6">
+                  <Button
+                    type="submit"
+                    disabled={creating || !isCreationFormValid}
+                    className="w-full"
+                    size="lg"
+                  >
+                    {creating ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Creando curso...
+                      </>
+                    ) : (
+                      'Crear Curso y Continuar'
+                    )}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => router.back()}
+                    disabled={creating}
+                    className="w-full"
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              </div>
             </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">Nivel *</label>
-              <select
-                value={creationFormData.level}
-                onChange={(e) =>
-                  setCreationFormData({
-                    ...creationFormData,
-                    level: e.target.value,
-                  })
-                }
-                required
-                disabled={creating}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="beginner">Principiante</option>
-                <option value="intermediate">Intermedio</option>
-                <option value="advanced">Avanzado</option>
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1">
-              Imagen de Portada
-            </label>
-            <Input
-              type="file"
-              accept="image/*"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) setThumbnailFile(file);
-              }}
-              disabled={creating}
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Recomendado: 1280x720px (16:9)
-            </p>
-          </div>
-
-          <div className="flex gap-3 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => router.back()}
-              disabled={creating}
-            >
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={creating}>
-              {creating ? "Creando..." : "Crear Curso y Continuar"}
-            </Button>
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
     );
   }
@@ -1371,6 +1676,15 @@ export default function UnifiedCourseEditor({
               }}
             />
           </div>
+          <a
+            href={isAdmin ? `/admin/courses/${courseId}/preview` : `/teacher/courses/${courseId}/preview`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors shadow-sm"
+          >
+            <Eye className="w-4 h-4" />
+            Vista Previa
+          </a>
         </div>
       </div>
 
@@ -1840,11 +2154,10 @@ export default function UnifiedCourseEditor({
                         onDragOver={(e) => handleDragOver(e, section.id)}
                         onDragLeave={handleDragLeave}
                         onDrop={(e) => handleDrop(e, section.id)}
-                        className={`transition-all ${
-                          dragOverChapter === section.id
+                        className={`transition-all ${dragOverChapter === section.id
                             ? "border-t-2 border-sky-500 pt-2"
                             : ""
-                        }`}
+                          }`}
                       >
                         <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg group hover:bg-muted cursor-move">
                           <div className="flex items-center gap-3 flex-1">

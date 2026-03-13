@@ -5,8 +5,9 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { CheckCircle2, Circle, ChevronRight, ChevronDown, PlayCircle, Lock, Award } from "lucide-react";
+import { CheckCircle2, Circle, ChevronRight, ChevronDown, PlayCircle, Lock, Award, Eye, ArrowLeft } from "lucide-react";
 import VideoPlayer from "./video-player";
+import Link from "next/link";
 import QuizComponent from "./quiz-component";
 import { useRouter } from "next/navigation";
 
@@ -75,11 +76,15 @@ export default function CoursePlayer({
   enrollmentId,
   studentId,
   progressData,
+  isPreview = false,
+  previewBackUrl,
 }: {
   course: Course;
   enrollmentId: string;
   studentId: string;
   progressData: Progress[];
+  isPreview?: boolean;
+  previewBackUrl?: string;
 }) {
   const [currentLesson, setCurrentLesson] = useState<Lesson | null>(null);
   const [currentSection, setCurrentSection] = useState<Section | null>(null);
@@ -114,8 +119,12 @@ export default function CoursePlayer({
       .map((l) => l.quizzes[0].id);
   }, [allLessons]);
 
-  // Fetch quiz attempts ONCE
+  // Fetch quiz attempts ONCE (skip in preview mode)
   useEffect(() => {
+    if (isPreview) {
+      setQuizAttemptsLoaded(true);
+      return;
+    }
     if (allQuizIds.length === 0 || quizAttemptsLoaded) return;
 
     const fetchQuizAttempts = async () => {
@@ -144,7 +153,7 @@ export default function CoursePlayer({
     };
 
     fetchQuizAttempts();
-  }, [allQuizIds, studentId, supabase, quizAttemptsLoaded]);
+  }, [allQuizIds, studentId, supabase, quizAttemptsLoaded, isPreview]);
 
   // Memoize lesson completion check
   const isLessonFullyCompleted = useCallback((lesson: Lesson): boolean => {
@@ -161,8 +170,9 @@ export default function CoursePlayer({
     return true;
   }, [progress, quizAttempts]);
 
-  // Memoize unlock status
+  // Memoize unlock status (all unlocked in preview mode)
   const isLessonUnlocked = useCallback((lessonId: string): boolean => {
+    if (isPreview) return true;
     const lessonIndex = allLessons.findIndex((l) => l.id === lessonId);
     if (lessonIndex === 0) return true;
 
@@ -173,7 +183,7 @@ export default function CoursePlayer({
     }
 
     return true;
-  }, [allLessons, isLessonFullyCompleted]);
+  }, [allLessons, isLessonFullyCompleted, isPreview]);
 
   // Memoize course progress calculation
   const courseProgress = useMemo(() => {
@@ -276,6 +286,26 @@ export default function CoursePlayer({
   const markLessonComplete = async () => {
     if (!currentLesson) return;
 
+    // In preview mode, simulate completion without DB writes
+    if (isPreview) {
+      setProgress((prev) => {
+        const next = new Map(prev);
+        next.set(currentLesson.id, {
+          lesson_id: currentLesson.id,
+          is_completed: true,
+          last_position_seconds: 0,
+        });
+        return next;
+      });
+
+      if (currentLesson.has_quiz && currentLesson.quizzes.length > 0) {
+        setShowQuiz(true);
+      } else if (!isLastLesson()) {
+        goToNextLesson();
+      }
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from("progress")
@@ -353,11 +383,11 @@ export default function CoursePlayer({
   }, [currentSection, currentLesson, course.sections, isLessonUnlocked, selectLesson]);
 
   const completeCourse = async () => {
-  setCompletingCourse(true);
+    if (isPreview) return; // No-op in preview mode
+
+    setCompletingCourse(true);
 
     try {
-      // ✅ Route through the API instead of hitting Supabase directly.
-      //    The API handles: auth, validation, duplicate check, and RLS-safe insert.
       const response = await fetch("/api/certificates", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -370,7 +400,6 @@ export default function CoursePlayer({
       const data = await response.json();
 
       if (!response.ok) {
-        // Surface a meaningful error instead of a generic alert
         const message =
           data.error === "Course not completed"
             ? `Aún faltan lecciones por completar (${data.completed}/${data.total}).`
@@ -383,7 +412,6 @@ export default function CoursePlayer({
         return;
       }
 
-      // Success — certificate exists in data.certificate
       alert(
         "🎉 ¡Felicidades! Has completado el curso exitosamente.\n\nTu certificado está disponible en la sección 'Mis Certificados'."
       );
@@ -410,10 +438,33 @@ export default function CoursePlayer({
   const isLessonComplete = lessonProgress?.is_completed || false;
   const currentLessonFullyComplete = isLessonFullyCompleted(currentLesson);
   const hasVideo = currentLesson.video_provider || currentLesson.video_url;
-  const showCompleteCourseButton = isLastLesson() && currentLessonFullyComplete && isAllLessonsComplete();
+  const showCompleteCourseButton = !isPreview && isLastLesson() && currentLessonFullyComplete && isAllLessonsComplete();
 
   return (
-    <div className="flex h-[calc(100vh-64px)]">
+    <div className="flex flex-col h-[calc(100vh-64px)]">
+      {/* Preview Banner */}
+      {isPreview && (
+        <div className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-4 py-3 flex items-center justify-between flex-shrink-0 shadow-md">
+          <div className="flex items-center gap-3">
+            <Eye className="w-5 h-5" />
+            <div>
+              <span className="font-semibold text-sm">Modo Vista Previa</span>
+              <span className="text-amber-100 text-sm ml-2">— Estás viendo el curso como lo vería un estudiante</span>
+            </div>
+          </div>
+          {previewBackUrl && (
+            <Link
+              href={previewBackUrl}
+              className="flex items-center gap-2 bg-white/20 hover:bg-white/30 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Volver al editor
+            </Link>
+          )}
+        </div>
+      )}
+
+      <div className="flex flex-1 overflow-hidden">
       {/* Main Content Area */}
       <div className="flex-1 overflow-y-auto bg-gray-50">
         <div className="max-w-5xl mx-auto p-6 space-y-6">
@@ -585,6 +636,7 @@ export default function CoursePlayer({
         isLessonFullyCompleted={isLessonFullyCompleted}
         isLessonUnlocked={isLessonUnlocked}
       />
+      </div>{/* close flex row */}
     </div>
   );
 }
