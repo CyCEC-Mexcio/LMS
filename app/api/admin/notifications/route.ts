@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
     // Run queries in parallel
     const [
       pendingCoursesResult,
-      pendingEarningsResult,
+      unpaidTransactionsResult,
     ] = await Promise.all([
       // 1. Pending courses (not approved)
       supabase
@@ -33,22 +33,52 @@ export async function GET(req: NextRequest) {
         .select('*', { count: 'exact', head: true })
         .eq('is_approved', false),
 
-      // 2. Instructors with pending earnings
-      supabase.rpc('get_instructors_with_pending_earnings'),
+      // 2. Fetch all unpaid completed transactions to compute pending earnings
+      supabase
+        .from('transactions')
+        .select('instructor_id, instructor_earnings')
+        .eq('paid_out', false)
+        .eq('status', 'completed'),
     ]);
 
     const pendingCoursesCount = pendingCoursesResult.count ?? 0;
     
     // Count instructors who have at least $1500 pending
-    const instructorsWithPendingEarnings = pendingEarningsResult.data ?? [];
-    const pendingPayoutsCount = instructorsWithPendingEarnings.filter(
-      (i: any) => Number(i.pending_earnings ?? 0) >= 1500
-    ).length;
+    const instructorPendingTotals = new Map<string, number>();
+    for (const tx of (unpaidTransactionsResult.data ?? [])) {
+      if (!tx.instructor_id) continue;
+      const current = instructorPendingTotals.get(tx.instructor_id) || 0;
+      instructorPendingTotals.set(tx.instructor_id, current + Number(tx.instructor_earnings ?? 0));
+    }
+
+    let pendingPayoutsCount = 0;
+    for (const total of instructorPendingTotals.values()) {
+      if (total >= 1500) {
+        pendingPayoutsCount++;
+      }
+    }
+
+    // Calculate next payout date (1st or 15th of month)
+    const today = new Date();
+    const dayOfMonth = today.getDate();
+    let nextPayoutDate: Date;
+    if (dayOfMonth < 15) {
+      nextPayoutDate = new Date(today.getFullYear(), today.getMonth(), 15);
+    } else {
+      nextPayoutDate = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+    }
+    const daysUntilPayout = Math.max(0, Math.ceil(
+      (nextPayoutDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+    ));
+    // Show payout reminder when within 3 days
+    const payoutReminder = daysUntilPayout <= 3 ? 1 : 0;
 
     return NextResponse.json({
       pendingCoursesCount,
       pendingPayoutsCount,
-      totalNotifications: pendingCoursesCount + pendingPayoutsCount
+      nextPayoutDate: nextPayoutDate.toISOString(),
+      daysUntilPayout,
+      totalNotifications: pendingCoursesCount + pendingPayoutsCount + payoutReminder
     });
 
   } catch (error: any) {

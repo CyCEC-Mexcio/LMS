@@ -152,9 +152,20 @@ export async function POST(req: NextRequest) {
       console.log('✅ Stripe customer created:', customerId);
     }
 
-    // Calculate commission split (15% platform, 85% instructor)
-    const commissionRate = 0.15;
+    // Look up instructor's profile for role + custom commission rate
+    const { data: instructorProfile } = await supabase
+      .from('profiles')
+      .select('role, platform_fee_percent')
+      .eq('id', course.teacher_id)
+      .single();
+
     const totalAmount = Number(course.price);
+    const isAdminCourse = instructorProfile?.role === 'admin';
+
+    // Admin-created courses → 100% platform revenue; otherwise use instructor's custom fee
+    const commissionRate = isAdminCourse
+      ? 1.0
+      : (instructorProfile?.platform_fee_percent ?? 15) / 100;
     const platformFee = Math.round(totalAmount * commissionRate * 100) / 100;
     const instructorEarnings = totalAmount - platformFee;
 

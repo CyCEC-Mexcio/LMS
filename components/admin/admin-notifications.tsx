@@ -7,6 +7,8 @@ import Link from "next/link";
 interface AdminNotificationsData {
   pendingCoursesCount: number;
   pendingPayoutsCount: number;
+  nextPayoutDate: string;
+  daysUntilPayout: number;
   totalNotifications: number;
 }
 
@@ -112,8 +114,30 @@ export function AdminNotifications() {
                       </div>
                     </Link>
                   )}
+                  {data.daysUntilPayout <= 3 && (
+                    <Link 
+                      href="/admin/payouts" 
+                      onClick={() => setIsOpen(false)}
+                      className="p-3 flex items-start gap-3 hover:bg-emerald-50 border-b border-gray-50 transition-colors"
+                    >
+                      <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0 text-emerald-600 mt-0.5">
+                        <AlertCircle className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">
+                          Ciclo de pagos próximo
+                        </p>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          {data.daysUntilPayout === 0
+                            ? '¡Hoy es día de pagos! Revisa los pagos pendientes.'
+                            : `Faltan ${data.daysUntilPayout} día(s) para el próximo ciclo de pagos.`}
+                        </p>
+                      </div>
+                    </Link>
+                  )}
                 </div>
               )}
+
             </div>
           </div>
         </>

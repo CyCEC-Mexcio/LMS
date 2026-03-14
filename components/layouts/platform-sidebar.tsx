@@ -12,13 +12,40 @@ type Profile = {
   avatar_url: string | null;
 };
 
+type SectionKey = "shared" | "student" | "teacher" | "admin";
+
+function getSection(item: (typeof navigationItems)[0]): SectionKey {
+  if (item.href.startsWith("/admin")) return "admin";
+  if (item.href.startsWith("/teacher")) return "teacher";
+  if (item.href.startsWith("/student")) return "student";
+  return "shared";
+}
+
+const sectionLabels: Record<SectionKey, string> = {
+  shared: "",
+  student: "Estudiante",
+  teacher: "Instructor",
+  admin: "Administración",
+};
+
 export default function PlatformSidebar({ profile }: { profile: Profile }) {
   const pathname = usePathname();
 
-  // Filter nav items based on user role
+  // Filter nav items visible to this role
   const visibleItems = navigationItems.filter((item) =>
     item.roles.includes(profile.role as any)
   );
+
+  // Group by section, preserving order
+  const grouped: { section: SectionKey; items: typeof visibleItems }[] = [];
+  const sectionOrder: SectionKey[] = ["shared", "student", "teacher", "admin"];
+
+  for (const key of sectionOrder) {
+    const items = visibleItems.filter((item) => getSection(item) === key);
+    if (items.length > 0) {
+      grouped.push({ section: key, items });
+    }
+  }
 
   return (
     <aside className="w-64 bg-white border-r border-gray-200 overflow-y-auto">
@@ -33,46 +60,43 @@ export default function PlatformSidebar({ profile }: { profile: Profile }) {
           </p>
         </div>
 
-        {/* Navigation Items */}
-        {visibleItems.map((item) => {
-          const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+        {/* Navigation Items grouped by section */}
+        {grouped.map(({ section, items }, idx) => (
+          <div key={section}>
+            {/* Section header (skip for 'shared' / first section) */}
+            {section !== "shared" && (
+              <div className="pt-3 pb-1">
+                {idx > 0 && <div className="border-t border-gray-200 mb-2" />}
+                <p className="px-3 text-xs text-gray-500 font-semibold uppercase tracking-wider">
+                  {sectionLabels[section]}
+                </p>
+              </div>
+            )}
 
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors",
-                isActive
-                  ? "bg-blue-50 text-blue-600 font-medium"
-                  : "text-gray-700 hover:bg-gray-100"
-              )}
-            >
-              <span className="text-xl">{item.icon}</span>
-              <span className="text-sm">{item.title}</span>
-            </Link>
-          );
-        })}
+            {items.map((item) => {
+              const isActive =
+                pathname === item.href ||
+                (item.href !== "/browse" && pathname.startsWith(item.href + "/"));
+
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    "flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors",
+                    isActive
+                      ? "bg-blue-50 text-blue-600 font-medium"
+                      : "text-gray-700 hover:bg-gray-100"
+                  )}
+                >
+                  <span className="text-xl">{item.icon}</span>
+                  <span className="text-sm">{item.title}</span>
+                </Link>
+              );
+            })}
+          </div>
+        ))}
       </div>
-
-      {/* Divider for role sections */}
-      {profile.role === "teacher" && (
-        <div className="px-4 py-2">
-          <div className="border-t border-gray-200 my-2"></div>
-          <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider">
-            Instructor
-          </p>
-        </div>
-      )}
-
-      {profile.role === "admin" && (
-        <div className="px-4 py-2">
-          <div className="border-t border-gray-200 my-2"></div>
-          <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider">
-            Administración
-          </p>
-        </div>
-      )}
     </aside>
   );
-}
+}

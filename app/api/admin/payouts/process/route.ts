@@ -89,7 +89,7 @@ export async function POST(req: NextRequest) {
             period_end:        new Date().toISOString().split('T')[0],
             total_amount:      totalAmount,
             transaction_count: transactions.length,
-            payment_provider:  'manual_bank_transfer',
+            payment_provider:  'stripe',
             transfer_id:       null,
             status:            'completed',
             invoice_number:    invoiceNumber,

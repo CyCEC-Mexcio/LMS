@@ -90,6 +90,14 @@ const fmtDate = (s: string) =>
 const fmtMonth = (s: string) =>
   new Intl.DateTimeFormat('es-MX', { month: 'short', year: '2-digit' }).format(new Date(s));
 
+function getDaysUntil(dateStr: string): number {
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  const target = new Date(dateStr);
+  target.setHours(0, 0, 0, 0);
+  return Math.max(0, Math.ceil((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+}
+
 function StatusBadge({ status }: { status: string }) {
   if (status === 'completed')
     return <Badge className="bg-green-100 text-green-700 border-green-200 gap-1"><CheckCircle2 className="w-3 h-3" />Completado</Badge>;
@@ -110,7 +118,9 @@ export default function AdminPayoutsPage() {
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
 
-  useEffect(() => { fetchStats(); }, []);
+  useEffect(() => {
+    fetchStats();
+  }, []);
 
   const fetchStats = async () => {
     setError(null);
@@ -219,7 +229,7 @@ export default function AdminPayoutsPage() {
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-3xl font-bold">Gestión de Pagos</h1>
-          <p className="text-gray-600 mt-1">Administra los pagos mensuales a instructores</p>
+          <p className="text-gray-600 mt-1">Administra los pagos cada 15 días a instructores (1ro y 15 de cada mes)</p>
         </div>
         <Button
           onClick={() => handleProcessPayouts('manual')}
@@ -276,9 +286,11 @@ export default function AdminPayoutsPage() {
             bold: false,
           },
           {
-            label: 'Último Pago',
-            value: stats?.recentPayouts?.[0] ? fmtDate(stats.recentPayouts[0].processed_at) : 'Sin historial',
-            sub: 'Fecha de la última transacción',
+            label: 'Próximo Pago',
+            value: stats?.nextPayoutDate ? fmtDate(stats.nextPayoutDate) : 'Sin programar',
+            sub: stats?.nextPayoutDate
+              ? `En ${getDaysUntil(stats.nextPayoutDate)} día(s)`
+              : 'Ciclo cada 15 días (1ro y 15)',
             icon: <Calendar className="h-5 w-5 text-emerald-600" />,
             bg: 'bg-gradient-to-br from-emerald-50 to-emerald-100/60 shadow-sm border border-emerald-100/50',
             bold: false,
@@ -592,8 +604,9 @@ export default function AdminPayoutsPage() {
       <Alert className="border-blue-200 bg-blue-50">
         <AlertCircle className="h-4 w-4 text-blue-600" />
         <AlertDescription className="text-blue-700">
-          Los pagos se procesan de forma manual mediante transferencia bancaria. Revisa la información de cada instructor
-          depositando la cantidad pendiente directa en su CLABE, y marca la transacción como <strong>Pagado</strong>.
+          Los pagos se procesan cada <strong>15 días</strong> (el 1ro y 15 de cada mes) mediante transferencia bancaria.
+          Revisa la información de cada instructor, deposita la cantidad pendiente en su CLABE, y marca la transacción como <strong>Pagado</strong>.
+          Los cursos creados por un administrador se contabilizan como <strong>ganancias de la plataforma</strong>.
         </AlertDescription>
       </Alert>
     </div>
