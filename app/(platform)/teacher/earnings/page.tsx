@@ -7,8 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
-import { DollarSign, CreditCard, TrendingUp, Calendar } from "lucide-react";
-
+import { DollarSign, TrendingUp, Calendar, AlertCircle } from "lucide-react";
+import { BankingInfoForm } from "@/components/teacher/banking-info-form";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 export default async function TeacherEarningsPage() {
   const profile = await getUserProfile();
 
@@ -18,8 +19,15 @@ export default async function TeacherEarningsPage() {
 
   const supabase = await createClient();
 
-  // Check Stripe Connect status
-  const hasStripeAccount = !!profile.stripe_account_id;
+  // Get the teacher's profile extending it with platform_fee_percent
+  const { data: teacherProfile } = await supabase
+    .from("profiles")
+    .select("platform_fee_percent")
+    .eq("id", profile.id)
+    .single();
+
+  const platformFeePercent = teacherProfile?.platform_fee_percent ?? 10;
+  const platformFeeMultiplier = platformFeePercent / 100;
 
   // Get all enrollments for this teacher's courses
   const { data: enrollments } = await supabase
@@ -47,8 +55,8 @@ export default async function TeacherEarningsPage() {
     0
   ) || 0;
 
-  // Platform takes 10% fee
-  const platformFee = totalEarnings * 0.1;
+  // Platform takes variable fee (default 10%)
+  const platformFee = totalEarnings * platformFeeMultiplier;
   const netEarnings = totalEarnings - platformFee;
 
   // Calculate monthly earnings
@@ -60,7 +68,7 @@ export default async function TeacherEarningsPage() {
     return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
   }).reduce((sum, e) => sum + (Number(e.amount_paid) || 0), 0) || 0;
 
-  const monthlyNet = monthlyEarnings - (monthlyEarnings * 0.1);
+  const monthlyNet = monthlyEarnings - (monthlyEarnings * platformFeeMultiplier);
 
   // Group earnings by month
   const earningsByMonth = enrollments?.reduce((acc: any, enrollment) => {
@@ -94,33 +102,8 @@ export default async function TeacherEarningsPage() {
         </p>
       </div>
 
-      {/* Stripe Connect Status */}
-      {!hasStripeAccount && (
-        <Card className="border-orange-200 bg-orange-50">
-          <CardContent className="pt-6">
-            <div className="flex items-start gap-4">
-              <div className="p-3 bg-orange-100 rounded-lg">
-                <CreditCard className="w-6 h-6 text-orange-600" />
-              </div>
-              <div className="flex-1">
-                <h3 className="font-semibold text-lg mb-2">
-                  Configura tu cuenta de pagos
-                </h3>
-                <p className="text-gray-700 mb-4">
-                  Para recibir pagos de tus cursos, necesitas conectar tu cuenta de Stripe.
-                  Esto te permite recibir pagos directamente de tus estudiantes.
-                </p>
-                <Link href="/api/instructor/stripe-connect">
-                  <Button>
-                    <CreditCard className="w-4 h-4 mr-2" />
-                    Conectar con Stripe
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* Banking Info Form */}
+      <BankingInfoForm />
 
       {/* Earnings Overview */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -139,7 +122,7 @@ export default async function TeacherEarningsPage() {
               Neto: ${netEarnings.toLocaleString("es-MX")}
             </div>
             <div className="text-xs text-gray-500 mt-1">
-              Comisión de plataforma: ${platformFee.toLocaleString("es-MX")} (10%)
+              Comisión de plataforma: ${platformFee.toLocaleString("es-MX")} ({platformFeePercent}%)
             </div>
           </CardContent>
         </Card>
@@ -177,34 +160,6 @@ export default async function TeacherEarningsPage() {
         </Card>
       </div>
 
-      {/* Stripe Account Info */}
-      {hasStripeAccount && (
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>Estado de la Cuenta</CardTitle>
-              <Badge className="bg-green-100 text-green-800">
-                Conectada
-              </Badge>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <p className="text-gray-600 mb-4">
-              Tu cuenta de Stripe está conectada y lista para recibir pagos.
-            </p>
-            <a
-              href="https://dashboard.stripe.com"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <Button variant="outline">
-                <CreditCard className="w-4 h-4 mr-2" />
-                Ir al Dashboard de Stripe
-              </Button>
-            </a>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Monthly Breakdown */}
       {monthlyData.length > 0 && (
@@ -215,7 +170,7 @@ export default async function TeacherEarningsPage() {
           <CardContent>
             <div className="space-y-3">
               {monthlyData.map((data: any) => {
-                const net = data.total - (data.total * 0.1);
+                const net = data.total - (data.total * platformFeeMultiplier);
                 const date = new Date(data.month + "-01");
                 const monthName = date.toLocaleDateString("es-MX", {
                   month: "long",
@@ -281,7 +236,7 @@ export default async function TeacherEarningsPage() {
                 <tbody>
                   {enrollments.slice(0, 20).map((enrollment: any) => {
                     const amount = Number(enrollment.amount_paid) || 0;
-                    const net = amount - (amount * 0.1);
+                    const net = amount - (amount * platformFeeMultiplier);
 
                     return (
                       <tr key={enrollment.id} className="border-b hover:bg-gray-50">
@@ -325,10 +280,10 @@ export default async function TeacherEarningsPage() {
         <CardContent className="pt-6">
           <h3 className="font-semibold mb-2">Información sobre pagos</h3>
           <ul className="space-y-2 text-sm text-gray-700">
-            <li>• La plataforma cobra una comisión del 10% sobre cada venta</li>
-            <li>• Los pagos se procesan a través de Stripe de forma segura</li>
-            <li>• Los fondos se transfieren a tu cuenta según la configuración de Stripe</li>
-            <li>• Puedes ver el detalle de cada transacción en tu dashboard de Stripe</li>
+            <li>• La plataforma cobra una comisión del {platformFeePercent}% sobre cada venta</li>
+            <li>• Los pagos se realizan de forma mensual mediante transferencia bancaria</li>
+            <li>• Asegúrate de mantener tu información bancaria actualizada para evitar retrasos</li>
+            <li>• Los fondos se envían cuando acumulas un monto mínimo de $1,500 MXN</li>
           </ul>
         </CardContent>
       </Card>

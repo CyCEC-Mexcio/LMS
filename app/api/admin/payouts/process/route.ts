@@ -1,12 +1,6 @@
 // app/api/admin/payouts/process/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import { createClient } from '@/lib/supabase/server';
-import Stripe from 'stripe';
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2026-01-28.clover',
-});
 
 export async function POST(req: NextRequest) {
   try {
@@ -27,14 +21,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const { mode } = await req.json();
+    const { mode, instructorId: targetInstructorId } = await req.json();
 
-    // Get all unpaid completed transactions
-    const { data: instructorsWithEarnings, error: instructorsError } = await supabase
+    // Build the query for unpaid completed transactions
+    let query = supabase
       .from('transactions')
       .select('instructor_id, instructor_earnings, id, course_id, created_at')
       .eq('paid_out', false)
       .eq('status', 'completed');
+
+    if (targetInstructorId) {
+      query = query.eq('instructor_id', targetInstructorId);
+    }
+
+    const { data: instructorsWithEarnings, error: instructorsError } = await query;
 
     if (instructorsError) throw instructorsError;
 
@@ -62,28 +62,17 @@ export async function POST(req: NextRequest) {
           (sum, t) => sum + Number(t.instructor_earnings), 0
         );
 
-        const { data: paymentPref } = await supabase
-          .from('payment_preferences')
+        // Check if teacher has banking info configured
+        const { data: bankingInfo } = await supabase
+          .from('teacher_banking_info')
           .select('*')
-          .eq('instructor_id', instructorId)
+          .eq('teacher_id', instructorId)
           .maybeSingle();
 
-        if (!paymentPref?.is_onboarded || !paymentPref.stripe_account_id) {
-          errors.push({ instructorId, error: 'Not onboarded with Stripe' });
+        if (!bankingInfo) {
+          errors.push({ instructorId, error: 'Información bancaria no configurada' });
           continue;
         }
-
-        const transfer = await stripe.transfers.create({
-          amount: Math.round(totalAmount * 100),
-          currency: 'mxn',
-          destination: paymentPref.stripe_account_id,
-          description: `Pago mensual - ${transactions.length} ventas`,
-          metadata: {
-            instructor_id: instructorId,
-            transaction_count: transactions.length.toString(),
-            payout_period: new Date().toISOString(),
-          },
-        });
 
         const { data: invoiceData } = await supabase.rpc('generate_invoice_number').maybeSingle();
         const invoiceNumber = invoiceData || `INV-${Date.now()}`;
@@ -100,8 +89,8 @@ export async function POST(req: NextRequest) {
             period_end:        new Date().toISOString().split('T')[0],
             total_amount:      totalAmount,
             transaction_count: transactions.length,
-            payment_provider:  'stripe',
-            transfer_id:       transfer.id,
+            payment_provider:  'manual_bank_transfer',
+            transfer_id:       null,
             status:            'completed',
             invoice_number:    invoiceNumber,
             initiated_by:      mode === 'manual' ? user.id : null,
@@ -130,7 +119,6 @@ export async function POST(req: NextRequest) {
           amount: totalAmount,
           transactionCount: transactions.length,
           payoutId: payout.id,
-          transferId: transfer.id,
         });
 
       } catch (err: any) {

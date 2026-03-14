@@ -125,7 +125,11 @@ export default function CoursePlayer({
       setQuizAttemptsLoaded(true);
       return;
     }
-    if (allQuizIds.length === 0 || quizAttemptsLoaded) return;
+    if (allQuizIds.length === 0) {
+      setQuizAttemptsLoaded(true);
+      return;
+    }
+    if (quizAttemptsLoaded) return;
 
     const fetchQuizAttempts = async () => {
       try {

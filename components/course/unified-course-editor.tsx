@@ -52,7 +52,7 @@ type CourseData = {
   description: string;
   organization: string;
   instructor_name: string;
-  thumbnail_url: string;
+  thumbnail_url: string | null;
   price: number;
   category: string;
   level: string;
@@ -271,6 +271,8 @@ function CertificateSettings({
     certificateType
   );
   const [logo, setLogo] = useState<string | null>(logoUrl);
+  const [logoInputMode, setLogoInputMode] = useState<"file" | "url">("file");
+  const [logoInputUrl, setLogoInputUrl] = useState<string>(logoUrl || "");
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -402,67 +404,196 @@ function CertificateSettings({
 
         {/* Logo Upload */}
         <div>
-          <label className="text-sm font-medium text-foreground block mb-2">
-            Logo de la organización *
-          </label>
-
-          {logo ? (
-            <div className="space-y-3">
-              <div className="relative w-48 h-48 border-2 border-gray-200 rounded-lg overflow-hidden bg-white">
-                <img
-                  src={logo}
-                  alt="Logo"
-                  className="w-full h-full object-contain p-4"
-                />
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setLogo(null);
-                  setUploading(false);
-                }}
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-sm font-medium text-foreground">
+              Logo de la organización *
+            </label>
+            <div className="flex gap-1 bg-muted rounded-lg p-0.5">
+              <button
+                type="button"
+                onClick={() => setLogoInputMode("file")}
+                className={`px-2.5 py-1 text-xs rounded-md transition-colors ${
+                  logoInputMode === "file"
+                    ? "bg-background text-foreground shadow-sm font-medium"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
               >
-                <X className="w-4 h-4 mr-2" />
-                Cambiar logo
-              </Button>
+                <Upload className="w-3 h-3 inline mr-1" />
+                Archivo
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setLogoInputMode("url");
+                  setLogoInputUrl(logo || "");
+                }}
+                className={`px-2.5 py-1 text-xs rounded-md transition-colors ${
+                  logoInputMode === "url"
+                    ? "bg-background text-foreground shadow-sm font-medium"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                🔗 URL
+              </button>
+            </div>
+          </div>
+
+          {logoInputMode === "file" ? (
+            <div className="space-y-3">
+              {logo ? (
+                <div className="space-y-3">
+                  <div className="relative w-full max-w-xs aspect-video border-2 border-border rounded-lg overflow-hidden bg-muted group">
+                    <img
+                      src={logo}
+                      alt="Logo"
+                      className="w-full h-full object-contain bg-white transition-opacity group-hover:opacity-60 p-2"
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40">
+                      <label className="cursor-pointer bg-white text-black px-4 py-2 rounded-md font-medium text-sm hover:bg-gray-100 transition-colors shadow-lg flex items-center gap-2">
+                        {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                        {uploading ? "Subiendo..." : "Cambiar Logo"}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            setUploading(true);
+                            try {
+                              const url = await handleLogoUpload(file);
+                              setLogo(url);
+                            } catch (error) {
+                              console.error("Error uploading logo:", error);
+                              alert("Error al subir el logo");
+                            } finally {
+                              setUploading(false);
+                            }
+                          }}
+                          disabled={uploading}
+                        />
+                      </label>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      onClick={() => {
+                        if (confirm("¿Estás seguro de que deseas eliminar este logo?")) {
+                          setLogo(null);
+                        }
+                      }}
+                      disabled={uploading}
+                    >
+                      <Trash2 className="w-4 h-4 mr-1" />
+                      Eliminar logo
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <label className="cursor-pointer w-full flex flex-col items-center justify-center gap-2 p-8 border-2 border-dashed border-border rounded-lg hover:border-sky-500 hover:bg-sky-50/50 transition-colors">
+                    <ImageIcon className="w-10 h-10 text-muted-foreground/60" />
+                    <span className="text-sm font-medium text-foreground">
+                      Haz clic para subir logo
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      PNG, JPG (Recomendado: 500x500px)
+                    </span>
+                    {uploading && (
+                      <div className="flex items-center gap-2 text-sky-600 mt-2 text-sm font-medium">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Subiendo...
+                      </div>
+                    )}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+
+                        setUploading(true);
+                        try {
+                          const url = await handleLogoUpload(file);
+                          setLogo(url);
+                        } catch (error) {
+                          console.error("Error uploading logo:", error);
+                          alert("Error al subir el logo");
+                        } finally {
+                          setUploading(false);
+                        }
+                      }}
+                      disabled={uploading}
+                    />
+                  </label>
+                </div>
+              )}
             </div>
           ) : (
-            <div>
-              <label className="cursor-pointer">
-                <div className="w-full p-8 border-2 border-dashed border-gray-300 rounded-lg hover:border-sky-500 transition-colors flex flex-col items-center gap-2">
-                  <ImageIcon className="w-12 h-12 text-gray-400" />
-                  <span className="text-sm text-gray-600">
-                    Haz clic para subir logo
-                  </span>
-                  <span className="text-xs text-gray-500">
-                    PNG, JPG (Recomendado: 500x500px)
-                  </span>
-                </div>
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-
-                    setUploading(true);
-                    try {
-                      const url = await handleLogoUpload(file);
-                      setLogo(url);
-                    } catch (error) {
-                      console.error("Error uploading logo:", error);
-                      alert("Error al subir el logo");
-                    } finally {
-                      setUploading(false);
+            <div className="space-y-4">
+              <div className="flex gap-2">
+                <Input
+                  value={logoInputUrl}
+                  onChange={(e) => setLogoInputUrl(e.target.value)}
+                  placeholder="https://ejemplo.com/logo.png"
+                  disabled={uploading}
+                  type="url"
+                  className="flex-1"
+                />
+                <Button
+                  onClick={() => {
+                    if (logoInputUrl.trim()) {
+                      setLogo(logoInputUrl.trim());
+                      alert("URL de logo aplicada. Recuerda hacer clic en 'Guardar Configuración'.");
                     }
                   }}
-                  disabled={uploading}
-                />
-              </label>
-              {uploading && (
-                <p className="text-sm text-gray-500 mt-2">Subiendo logo...</p>
+                  disabled={uploading || !logoInputUrl.trim() || logoInputUrl.trim() === logo}
+                  type="button"
+                  variant="secondary"
+                >
+                  Aplicar URL
+                </Button>
+              </div>
+              
+              {logo && (
+                <div className="space-y-3">
+                  <div className="relative w-full max-w-xs aspect-video border-2 border-border rounded-lg overflow-hidden bg-muted">
+                    <img
+                      src={logo}
+                      alt="Logo"
+                      className="w-full h-full object-contain p-2 bg-white"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
+                      onLoad={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'block';
+                      }}
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      onClick={() => {
+                        if (confirm("¿Estás seguro de que deseas eliminar este logo?")) {
+                          setLogo(null);
+                          setLogoInputUrl("");
+                        }
+                      }}
+                      disabled={uploading}
+                    >
+                      <Trash2 className="w-4 h-4 mr-1" />
+                      Eliminar logo
+                    </Button>
+                  </div>
+                </div>
               )}
             </div>
           )}
@@ -1802,21 +1933,21 @@ export default function UnifiedCourseEditor({
         </>
       )}
 
-      <div className="max-w-6xl mx-auto px-6 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Left Column */}
+      <div className="max-w-[1400px] mx-auto px-6 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Column 1 - Información Básica */}
           <div className="space-y-6">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-sky-100 rounded-lg">
                 <LayoutGrid className="w-5 h-5 text-sky-600" />
               </div>
               <h2 className="text-xl font-semibold text-foreground">
-                Personaliza tu curso
+                Información Básica
               </h2>
             </div>
 
             {/* Course Title */}
-            <div className="bg-card rounded-lg border border-border p-5">
+            <div className="bg-card rounded-xl border border-border p-5">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <h3 className="text-sm font-medium text-muted-foreground mb-1">
@@ -1848,13 +1979,14 @@ export default function UnifiedCourseEditor({
                       </div>
                     </div>
                   ) : (
-                    <p className="text-base text-foreground">{course.title}</p>
+                    <p className="text-base text-foreground font-medium">{course.title}</p>
                   )}
                 </div>
                 {editingField !== "title" && (
                   <Button
                     variant="ghost"
                     size="sm"
+                    className="text-muted-foreground hover:text-foreground"
                     onClick={() => startEditing("title", course.title)}
                   >
                     <Pencil className="w-4 h-4 mr-1" />
@@ -1865,7 +1997,7 @@ export default function UnifiedCourseEditor({
             </div>
 
             {/* Course Description */}
-            <div className="bg-card rounded-lg border border-border p-5">
+            <div className="bg-card rounded-xl border border-border p-5">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <h3 className="text-sm font-medium text-muted-foreground mb-1">
@@ -1897,7 +2029,7 @@ export default function UnifiedCourseEditor({
                       </div>
                     </div>
                   ) : (
-                    <p className="text-base text-foreground whitespace-pre-wrap">
+                    <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
                       {course.description}
                     </p>
                   )}
@@ -1906,6 +2038,7 @@ export default function UnifiedCourseEditor({
                   <Button
                     variant="ghost"
                     size="sm"
+                    className="text-muted-foreground hover:text-foreground"
                     onClick={() => startEditing("description", course.description)}
                   >
                     <Pencil className="w-4 h-4 mr-1" />
@@ -1915,19 +2048,9 @@ export default function UnifiedCourseEditor({
               </div>
             </div>
 
-            {/* Learning Outcomes */}
-            <LearningOutcomesEditor
-              outcomes={course.learning_outcomes || []}
-              onUpdate={handleUpdateLearningOutcomes}
-              isEditing={editingLearningOutcomes}
-              onEditToggle={() =>
-                setEditingLearningOutcomes(!editingLearningOutcomes)
-              }
-            />
-
             {/* Organization & Instructor */}
             <div className="grid grid-cols-2 gap-4">
-              <div className="bg-card rounded-lg border border-border p-5">
+              <div className="bg-card rounded-xl border border-border p-5">
                 <h3 className="text-sm font-medium text-muted-foreground mb-1">
                   Organización
                 </h3>
@@ -1953,13 +2076,13 @@ export default function UnifiedCourseEditor({
                   </div>
                 ) : (
                   <>
-                    <p className="text-base text-foreground">
+                    <p className="text-sm text-foreground font-medium">
                       {displayOrganization}
                     </p>
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="mt-2 text-xs"
+                      className="mt-2 text-xs text-muted-foreground hover:text-foreground h-7 px-2"
                       onClick={() =>
                         startEditing("organization", course.organization || "")
                       }
@@ -1971,7 +2094,7 @@ export default function UnifiedCourseEditor({
                 )}
               </div>
 
-              <div className="bg-card rounded-lg border border-border p-5">
+              <div className="bg-card rounded-xl border border-border p-5">
                 <h3 className="text-sm font-medium text-muted-foreground mb-1">
                   Instructor
                 </h3>
@@ -1996,13 +2119,13 @@ export default function UnifiedCourseEditor({
                   </div>
                 ) : (
                   <>
-                    <p className="text-base text-foreground">
+                    <p className="text-sm text-foreground font-medium">
                       {course.instructor_name}
                     </p>
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="mt-2 text-xs"
+                      className="mt-2 text-xs text-muted-foreground hover:text-foreground h-7 px-2"
                       onClick={() =>
                         startEditing("instructor_name", course.instructor_name)
                       }
@@ -2015,382 +2138,570 @@ export default function UnifiedCourseEditor({
               </div>
             </div>
 
-            {/* Course Image */}
-            <div className="bg-card rounded-lg border border-border p-5">
-              <div className="flex items-start justify-between mb-4">
-                <h3 className="text-sm font-medium text-muted-foreground">
-                  Imagen del curso
-                </h3>
-                <label>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    asChild
-                    className="cursor-pointer"
-                  >
-                    <span>
-                      <Upload className="w-4 h-4 mr-1" />
-                      Cambiar
-                    </span>
-                  </Button>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-
-                      setSaving(true);
-                      try {
-                        const url = await handleThumbnailUpload(file);
-                        await supabase
-                          .from("courses")
-                          .update({ thumbnail_url: url })
-                          .eq("id", courseId);
-                        setCourse((prev) =>
-                          prev ? { ...prev, thumbnail_url: url } : null
-                        );
-                        router.refresh();
-                      } catch (error) {
-                        console.error("Error uploading thumbnail:", error);
-                        setSuccessMessage("Error al subir imagen");
-                      } finally {
-                        setSaving(false);
-                      }
-                    }}
-                  />
-                </label>
-              </div>
-              <div className="aspect-video w-full max-w-sm rounded-lg overflow-hidden bg-muted">
-                {course.thumbnail_url ? (
-                  <img
-                    src={course.thumbnail_url}
-                    alt="Course thumbnail"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                    Sin imagen
-                  </div>
-                )}
-              </div>
-            </div>
+            {/* Learning Outcomes */}
+            <LearningOutcomesEditor
+              outcomes={course.learning_outcomes || []}
+              onUpdate={handleUpdateLearningOutcomes}
+              isEditing={editingLearningOutcomes}
+              onEditToggle={() =>
+                setEditingLearningOutcomes(!editingLearningOutcomes)
+              }
+            />
           </div>
 
-          {/* Right Column */}
+          {/* Column 2 - Detalles y Media */}
           <div className="space-y-6">
-            {/* Course Chapters */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-sky-100 rounded-lg">
-                  <ListChecks className="w-5 h-5 text-sky-600" />
-                </div>
-                <h2 className="text-xl font-semibold text-foreground">
-                  Capítulos del curso
-                </h2>
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-sky-100 rounded-lg">
+                <ImageIcon className="w-5 h-5 text-sky-600" />
               </div>
-
-              <div className="bg-card rounded-lg border border-border p-5">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-medium text-muted-foreground">
-                    Capítulos
+              <h2 className="text-xl font-semibold text-foreground">
+                Media y Detalles
+              </h2>
+            </div>
+            
+            {/* Price Section */}
+            <div className="bg-card rounded-xl border border-border p-5">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <h3 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
+                    <DollarSign className="w-4 h-4 text-sky-600" />
+                    Precio
                   </h3>
+                  {editingField === "price" ? (
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-muted-foreground">$</span>
+                        <Input
+                          type="number"
+                          value={tempValue}
+                          onChange={(e) => setTempValue(e.target.value)}
+                          className="w-32"
+                          step="0.01"
+                          min="0"
+                          autoFocus
+                        />
+                        <span className="text-sm text-muted-foreground">MXN</span>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          onClick={() => saveField("price")}
+                          disabled={saving}
+                        >
+                          Guardar
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={cancelEditing}
+                        >
+                          Cancelar
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-xl font-semibold text-foreground">
+                      {course.price > 0 ? `$${course.price.toFixed(2)} MXN` : "Gratis"}
+                    </p>
+                  )}
+                </div>
+                {editingField !== "price" && (
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => setAddingChapter(true)}
+                    className="text-muted-foreground hover:text-foreground"
+                    onClick={() =>
+                      startEditing("price", course.price.toString())
+                    }
                   >
-                    <Plus className="w-4 h-4 mr-1" />
-                    Agregar capítulo
+                    <Pencil className="w-4 h-4 mr-1" />
+                    Editar
                   </Button>
-                </div>
-
-                {addingChapter && (
-                  <div className="mb-4 p-3 bg-sky-50 rounded-lg border border-sky-200">
-                    <Input
-                      value={newChapterTitle}
-                      onChange={(e) => setNewChapterTitle(e.target.value)}
-                      placeholder="Nombre del capítulo"
-                      className="mb-2"
-                      autoFocus
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") handleCreateChapter();
-                        if (e.key === "Escape") {
-                          setAddingChapter(false);
-                          setNewChapterTitle("");
-                        }
-                      }}
-                    />
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        onClick={handleCreateChapter}
-                        disabled={saving}
-                      >
-                        {saving ? "Creando..." : "Crear"}
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setAddingChapter(false);
-                          setNewChapterTitle("");
-                        }}
-                      >
-                        Cancelar
-                      </Button>
-                    </div>
-                  </div>
                 )}
-
-                {sections.length > 0 ? (
-                  <div className="space-y-2">
-                    {sections.map((section, index) => (
-                      <div
-                        key={section.id}
-                        draggable
-                        onDragStart={(e) => handleDragStart(e, section.id)}
-                        onDragOver={(e) => handleDragOver(e, section.id)}
-                        onDragLeave={handleDragLeave}
-                        onDrop={(e) => handleDrop(e, section.id)}
-                        className={`transition-all ${dragOverChapter === section.id
-                            ? "border-t-2 border-sky-500 pt-2"
-                            : ""
-                          }`}
-                      >
-                        <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg group hover:bg-muted cursor-move">
-                          <div className="flex items-center gap-3 flex-1">
-                            <GripVertical className="w-4 h-4 text-muted-foreground cursor-grab active:cursor-grabbing" />
-
-                            {editingChapterId === section.id ? (
-                              <Input
-                                value={editChapterTitle}
-                                onChange={(e) =>
-                                  setEditChapterTitle(e.target.value)
-                                }
-                                className="flex-1"
-                                autoFocus
-                                onKeyDown={(e) => {
-                                  if (e.key === "Enter")
-                                    handleUpdateChapter(section.id);
-                                  if (e.key === "Escape") {
-                                    setEditingChapterId(null);
-                                    setEditChapterTitle("");
-                                  }
-                                }}
-                              />
-                            ) : (
-                              <button
-                                onClick={() => toggleChapterExpand(section.id)}
-                                className="flex items-center gap-2 flex-1 text-left"
-                              >
-                                {expandedChapters.has(section.id) ? (
-                                  <ChevronDown className="w-4 h-4" />
-                                ) : (
-                                  <ChevronRight className="w-4 h-4" />
-                                )}
-                                <span className="text-sm font-medium">
-                                  {index + 1}. {section.title}
-                                </span>
-                                <Badge variant="outline" className="text-xs ml-2">
-                                  {section.lessons?.length || 0} lecciones
-                                </Badge>
-                              </button>
-                            )}
-                          </div>
-
-                          <div className="flex items-center gap-1">
-                            {editingChapterId === section.id ? (
-                              <>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleUpdateChapter(section.id)}
-                                  disabled={saving}
-                                >
-                                  Guardar
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => {
-                                    setEditingChapterId(null);
-                                    setEditChapterTitle("");
-                                  }}
-                                >
-                                  Cancelar
-                                </Button>
-                              </>
-                            ) : (
-                              <>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-7 w-7"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setEditingChapterId(section.id);
-                                    setEditChapterTitle(section.title);
-                                  }}
-                                >
-                                  <Pencil className="w-3 h-3" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-7 w-7 text-red-600 hover:bg-red-50"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    openDeleteDialog(section.id, section.title);
-                                  }}
-                                >
-                                  <Trash2 className="w-3 h-3" />
-                                </Button>
-                              </>
-                            )}
-                          </div>
-                        </div>
-
-                        {expandedChapters.has(section.id) && (
-                          <div className="ml-7 mt-2 space-y-2">
-                            {section.lessons && section.lessons.length > 0 ? (
-                              section.lessons.map(
-                                (lesson: any, lessonIndex: number) => (
-                                  <div
-                                    key={lesson.id}
-                                    className="flex items-center justify-between p-2 bg-background rounded border hover:border-sky-300 cursor-pointer"
-                                    onClick={() =>
-                                      handleEditLesson(section.id, lesson.id)
-                                    }
-                                  >
-                                    <div className="flex items-center gap-2 flex-1">
-                                      <span className="text-xs text-muted-foreground w-6">
-                                        {lessonIndex + 1}.
-                                      </span>
-                                      <span className="text-sm">
-                                        {lesson.title}
-                                      </span>
-                                      {lesson.is_free_preview && (
-                                        <Badge variant="outline" className="text-xs">
-                                          Preview
-                                        </Badge>
-                                      )}
-                                    </div>
-                                    <Pencil className="w-3 h-3 text-muted-foreground" />
-                                  </div>
-                                )
-                              )
-                            ) : (
-                              <p className="text-xs text-muted-foreground text-center py-3">
-                                No hay lecciones aún
-                              </p>
-                            )}
-
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="w-full"
-                              onClick={() => handleAddLesson(section.id)}
-                            >
-                              <Plus className="w-3 h-3 mr-1" />
-                              Agregar Lección
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground text-center py-4">
-                    No hay capítulos aún
-                  </p>
-                )}
-
-                <p className="text-xs text-muted-foreground mt-4">
-                  Arrastra los capítulos para reordenarlos
-                </p>
               </div>
             </div>
 
-            {/* Price Section */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-sky-100 rounded-lg">
-                  <DollarSign className="w-5 h-5 text-sky-600" />
+            {/* Course Image - Enhanced */}
+            <div className="bg-card rounded-xl border border-border p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-medium text-muted-foreground">
+                  Imagen de Portada
+                </h3>
+                <div className="flex gap-1 bg-muted rounded-lg p-0.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setThumbnailInputMode("file");
+                      setThumbnailUrl("");
+                    }}
+                    className={`px-2.5 py-1 text-xs rounded-md transition-colors ${
+                      thumbnailInputMode === "file"
+                        ? "bg-background text-foreground shadow-sm font-medium"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <Upload className="w-3 h-3 inline mr-1" />
+                    Archivo
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setThumbnailInputMode("url");
+                      setThumbnailUrl(course.thumbnail_url || "");
+                    }}
+                    className={`px-2.5 py-1 text-xs rounded-md transition-colors ${
+                      thumbnailInputMode === "url"
+                        ? "bg-background text-foreground shadow-sm font-medium"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    🔗 URL
+                  </button>
                 </div>
-                <h2 className="text-xl font-semibold text-foreground">
-                  Precio del curso
-                </h2>
               </div>
 
-              <div className="bg-card rounded-lg border border-border p-5">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <h3 className="text-sm font-medium text-muted-foreground mb-1">
-                      Precio
-                    </h3>
-                    {editingField === "price" ? (
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-2">
-                          <span>$</span>
-                          <Input
-                            type="number"
-                            value={tempValue}
-                            onChange={(e) => setTempValue(e.target.value)}
-                            className="w-32"
-                            step="0.01"
-                            min="0"
-                            autoFocus
-                          />
-                          <span className="text-sm">MXN</span>
+              {thumbnailInputMode === "file" ? (
+                <div className="space-y-4">
+                  <div className="aspect-video w-full rounded-lg overflow-hidden bg-muted border border-border relative group">
+                    {course.thumbnail_url ? (
+                      <>
+                        <img
+                          src={course.thumbnail_url}
+                          alt="Course thumbnail"
+                          className="w-full h-full object-cover transition-opacity group-hover:opacity-60"
+                        />
+                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40">
+                          <label className="cursor-pointer bg-white text-black px-4 py-2 rounded-md font-medium text-sm hover:bg-gray-100 transition-colors shadow-lg flex items-center gap-2">
+                            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                            {saving ? "Subiendo..." : "Cambiar Imagen"}
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+
+                                setSaving(true);
+                                try {
+                                  const url = await handleThumbnailUpload(file);
+                                  await supabase
+                                    .from("courses")
+                                    .update({ thumbnail_url: url })
+                                    .eq("id", courseId);
+                                  setCourse((prev) =>
+                                    prev ? { ...prev, thumbnail_url: url } : null
+                                  );
+                                  router.refresh();
+                                } catch (error) {
+                                  console.error("Error uploading thumbnail:", error);
+                                  setSuccessMessage("Error al subir imagen");
+                                } finally {
+                                  setSaving(false);
+                                }
+                              }}
+                              disabled={saving}
+                            />
+                          </label>
                         </div>
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            onClick={() => saveField("price")}
-                            disabled={saving}
-                          >
-                            Guardar
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={cancelEditing}
-                          >
-                            Cancelar
-                          </Button>
-                        </div>
-                      </div>
+                      </>
                     ) : (
-                      <p className="text-base">
-                        ${course.price.toFixed(2)} MXN
-                      </p>
+                      <label className="cursor-pointer w-full h-full flex flex-col items-center justify-center gap-2 hover:bg-muted/80 transition-colors">
+                        <ImageIcon className="w-8 h-8 text-muted-foreground/60" />
+                        <span className="text-sm font-medium text-muted-foreground">Subir imagen</span>
+                        {saving && <Loader2 className="w-4 h-4 animate-spin text-sky-600 mt-2" />}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+
+                            setSaving(true);
+                            try {
+                              const url = await handleThumbnailUpload(file);
+                              await supabase
+                                .from("courses")
+                                .update({ thumbnail_url: url })
+                                .eq("id", courseId);
+                              setCourse((prev) =>
+                                prev ? { ...prev, thumbnail_url: url } : null
+                              );
+                              router.refresh();
+                            } catch (error) {
+                              console.error("Error uploading thumbnail:", error);
+                              setSuccessMessage("Error al subir imagen");
+                            } finally {
+                              setSaving(false);
+                            }
+                          }}
+                          disabled={saving}
+                        />
+                      </label>
                     )}
                   </div>
-                  {editingField !== "price" && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() =>
-                        startEditing("price", course.price.toString())
-                      }
-                    >
-                      <Pencil className="w-4 h-4 mr-1" />
-                      Editar
-                    </Button>
+                  {course.thumbnail_url && (
+                    <div className="flex justify-end">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        onClick={async () => {
+                           if (!confirm("¿Seguro que deseas eliminar la imagen?")) return;
+                           setSaving(true);
+                           try {
+                              await supabase
+                                .from("courses")
+                                .update({ thumbnail_url: null })
+                                .eq("id", courseId);
+                              setCourse((prev) =>
+                                prev ? { ...prev, thumbnail_url: null } : null
+                              );
+                              router.refresh();
+                           } catch (error) {
+                              console.error("Error deleting thumbnail:", error);
+                           } finally {
+                              setSaving(false);
+                           }
+                        }}
+                        disabled={saving}
+                      >
+                        <Trash2 className="w-3.5 h-3.5 mr-1" />
+                        Eliminar
+                      </Button>
+                    </div>
                   )}
                 </div>
-              </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="flex gap-2">
+                    <Input
+                      value={thumbnailUrl}
+                      onChange={(e) => setThumbnailUrl(e.target.value)}
+                      placeholder="https://ejemplo.com/imagen.jpg"
+                      disabled={saving}
+                      type="url"
+                      className="flex-1"
+                    />
+                    <Button
+                      onClick={async () => {
+                         if (!thumbnailUrl.trim()) return;
+                         setSaving(true);
+                         try {
+                            await supabase
+                                .from("courses")
+                                .update({ thumbnail_url: thumbnailUrl.trim() })
+                                .eq("id", courseId);
+                            setCourse((prev) =>
+                                prev ? { ...prev, thumbnail_url: thumbnailUrl.trim() } : null
+                            );
+                            setSuccessMessage("URL guardada exitosamente");
+                            router.refresh();
+                         } catch (error) {
+                            console.error("Error setting thumbnail URL:", error);
+                         } finally {
+                            setSaving(false);
+                         }
+                      }}
+                      disabled={saving || !thumbnailUrl.trim() || thumbnailUrl.trim() === course.thumbnail_url}
+                    >
+                      Guardar URL
+                    </Button>
+                  </div>
+                  <div className="aspect-video w-full rounded-lg overflow-hidden bg-muted border border-border">
+                    {course.thumbnail_url ? (
+                      <img
+                        src={course.thumbnail_url}
+                        alt="Course thumbnail"
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                        onLoad={(e) => {
+                          (e.target as HTMLImageElement).style.display = 'block';
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-muted-foreground text-sm">
+                        Sin imagen
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Certificate Section */}
             <CertificateSettings
-              courseId={courseId}
+              courseId={courseId!}
               certificateType={course.certificate_type}
               logoUrl={course.certificate_logo_url}
               onUpdate={fetchCourseData}
             />
+          </div>
+
+          {/* Column 3 - Estructura */}
+          <div className="space-y-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-sky-100 rounded-lg">
+                <ListChecks className="w-5 h-5 text-sky-600" />
+              </div>
+              <h2 className="text-xl font-semibold text-foreground">
+                Estructura del Curso
+              </h2>
+            </div>
+
+            {/* Course Chapters */}
+            <div className="bg-card rounded-xl border border-border p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-medium text-muted-foreground">
+                  Capítulos y Lecciones
+                </h3>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="bg-sky-50 text-sky-700 border-sky-200 hover:bg-sky-100 hover:text-sky-800"
+                  onClick={() => setAddingChapter(true)}
+                >
+                  <Plus className="w-4 h-4 mr-1" />
+                  Agregar capítulo
+                </Button>
+              </div>
+
+              {addingChapter && (
+                <div className="mb-4 p-4 bg-sky-50/50 rounded-lg border border-sky-100">
+                  <Input
+                    value={newChapterTitle}
+                    onChange={(e) => setNewChapterTitle(e.target.value)}
+                    placeholder="Nombre del capítulo"
+                    className="mb-3 bg-white"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleCreateChapter();
+                      if (e.key === "Escape") {
+                        setAddingChapter(false);
+                        setNewChapterTitle("");
+                      }
+                    }}
+                  />
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      onClick={handleCreateChapter}
+                      disabled={saving}
+                    >
+                      {saving ? "Creando..." : "Crear"}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setAddingChapter(false);
+                        setNewChapterTitle("");
+                      }}
+                      className="bg-white"
+                    >
+                      Cancelar
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {sections.length > 0 ? (
+                <div className="space-y-2.5">
+                  {sections.map((section, index) => (
+                    <div
+                      key={section.id}
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, section.id)}
+                      onDragOver={(e) => handleDragOver(e, section.id)}
+                      onDragLeave={handleDragLeave}
+                      onDrop={(e) => handleDrop(e, section.id)}
+                      className={`transition-all ${dragOverChapter === section.id
+                          ? "border-t-2 border-sky-500 pt-2"
+                          : ""
+                        }`}
+                    >
+                      <div className="flex items-center justify-between p-3.5 bg-muted/30 rounded-lg border border-transparent hover:border-border cursor-move group">
+                        <div className="flex items-center gap-3 flex-1">
+                          <GripVertical className="w-4 h-4 text-muted-foreground cursor-grab active:cursor-grabbing opacity-50 group-hover:opacity-100 transition-opacity" />
+
+                          {editingChapterId === section.id ? (
+                            <Input
+                              value={editChapterTitle}
+                              onChange={(e) =>
+                                setEditChapterTitle(e.target.value)
+                              }
+                              className="flex-1 h-8 text-sm bg-background"
+                              autoFocus
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter")
+                                  handleUpdateChapter(section.id);
+                                if (e.key === "Escape") {
+                                  setEditingChapterId(null);
+                                  setEditChapterTitle("");
+                                }
+                              }}
+                            />
+                          ) : (
+                            <button
+                              onClick={() => toggleChapterExpand(section.id)}
+                              className="flex items-center gap-2 flex-1 text-left"
+                            >
+                              {expandedChapters.has(section.id) ? (
+                                <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                              ) : (
+                                <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                              )}
+                              <span className="text-sm font-medium">
+                                {index + 1}. {section.title}
+                              </span>
+                              <Badge variant="secondary" className="text-[10px] ml-auto font-normal bg-background/80">
+                                {section.lessons?.length || 0} lecciones
+                              </Badge>
+                            </button>
+                          )}
+                        </div>
+
+                        <div className="flex items-center ml-2 border-l border-border pl-2 border-opacity-0 group-hover:border-opacity-100 transition-all opacity-0 group-hover:opacity-100">
+                          {editingChapterId === section.id ? (
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 px-2 text-xs"
+                                onClick={() => handleUpdateChapter(section.id)}
+                                disabled={saving}
+                              >
+                                Guardar
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 px-2 text-xs"
+                                onClick={() => {
+                                  setEditingChapterId(null);
+                                  setEditChapterTitle("");
+                                }}
+                              >
+                                Cancelar
+                              </Button>
+                            </>
+                          ) : (
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditingChapterId(section.id);
+                                  setEditChapterTitle(section.title);
+                                }}
+                              >
+                                <Pencil className="w-3.5 h-3.5" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-muted-foreground hover:text-red-600 hover:bg-red-50"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openDeleteDialog(section.id, section.title);
+                                }}
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      {expandedChapters.has(section.id) && (
+                        <div className="ml-9 mr-1 mt-2 mb-4 space-y-2 border-l-2 border-muted pl-4 py-1">
+                          {section.lessons && section.lessons.length > 0 ? (
+                            section.lessons.map(
+                              (lesson: any, lessonIndex: number) => (
+                                <div
+                                  key={lesson.id}
+                                  className="flex items-center justify-between p-2.5 bg-background rounded-md border border-border hover:border-sky-300 hover:shadow-sm cursor-pointer transition-all group/lesson"
+                                  onClick={() =>
+                                    handleEditLesson(section.id, lesson.id)
+                                  }
+                                >
+                                  <div className="flex items-center gap-2.5 flex-1">
+                                    <span className="text-xs font-mono text-muted-foreground w-4 text-right">
+                                      {lessonIndex + 1}.
+                                    </span>
+                                    <span className="text-sm font-medium">
+                                      {lesson.title}
+                                    </span>
+                                    {lesson.is_free_preview && (
+                                      <Badge variant="outline" className="text-[10px] bg-green-50 text-green-700 border-green-200 uppercase tracking-wider">
+                                        Libre
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  <div className="opacity-0 group-hover/lesson:opacity-100 transition-opacity bg-muted p-1.5 rounded-md">
+                                    <Pencil className="w-3 h-3 text-muted-foreground" />
+                                  </div>
+                                </div>
+                              )
+                            )
+                          ) : (
+                            <p className="text-xs text-muted-foreground text-center py-4 bg-muted/20 rounded-md border border-dashed border-border mb-2">
+                              No hay lecciones en este capítulo
+                            </p>
+                          )}
+
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="w-full justify-start text-xs text-muted-foreground hover:text-foreground border border-dashed border-border hover:border-solid hover:bg-muted/50 mt-2"
+                            onClick={() => handleAddLesson(section.id)}
+                          >
+                            <Plus className="w-3.5 h-3.5 mr-1" />
+                            Agregar Lección
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-10 px-4 text-center border-2 border-dashed border-border rounded-xl bg-muted/10">
+                  <div className="p-3 bg-muted rounded-full mb-3">
+                    <ListChecks className="w-6 h-6 text-muted-foreground" />
+                  </div>
+                  <p className="text-sm font-medium text-foreground mb-1">
+                    Comienza a estructurar tu curso
+                  </p>
+                  <p className="text-xs text-muted-foreground mb-4">
+                    Agrega capítulos para empezar a subir tus lecciones.
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setAddingChapter(true)}
+                  >
+                    <Plus className="w-4 h-4 mr-1" />
+                    Crear primer capítulo
+                  </Button>
+                </div>
+              )}
+
+              {sections.length > 0 && (
+                <div className="flex items-center justify-center gap-2 mt-5 pt-4 border-t border-border">
+                  <GripVertical className="w-3.5 h-3.5 text-muted-foreground/50" />
+                  <p className="text-xs text-muted-foreground">
+                    Arrastra los capítulos para reordenarlos
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

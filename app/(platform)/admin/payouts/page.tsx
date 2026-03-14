@@ -39,6 +39,12 @@ interface InstructorPending {
   total_earned: number;
   paid_earnings: number;
   transaction_count: number;
+  bank_name: string | null;
+  account_number: string | null;
+  clabe: string | null;
+  business_name: string | null;
+  rfc: string | null;
+  platform_fee_percent: number;
 }
 
 interface RecentPayout {
@@ -99,7 +105,7 @@ function StatusBadge({ status }: { status: string }) {
 export default function AdminPayoutsPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [processing, setProcessing] = useState(false);
+  const [processing, setProcessing] = useState<string | boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
@@ -119,16 +125,16 @@ export default function AdminPayoutsPage() {
     }
   };
 
-  const handleProcessPayouts = async (mode: 'auto' | 'manual') => {
-    if (!confirm('¿Confirmas que deseas procesar todos los pagos pendientes ahora?')) return;
-    setProcessing(true);
+  const handleProcessPayouts = async (mode: 'auto' | 'manual', instructorId?: string) => {
+    if (!confirm(instructorId ? '¿Confirmas que se completó la transferencia bancaria para este instructor?' : '¿Confirmas que deseas procesar todos los pagos pendientes ahora?')) return;
+    setProcessing(instructorId || 'all');
     setSuccessMsg(null);
     setError(null);
     try {
       const res = await fetch('/api/admin/payouts/process', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mode }),
+        body: JSON.stringify({ mode, instructorId }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error al procesar');
@@ -141,7 +147,42 @@ export default function AdminPayoutsPage() {
     }
   };
 
+  const [expandedRow, setExpandedRow] = useState<string | null>(null);
+
   // ── Chart tooltip ────────────────────────────────────────────────────────
+  const [editingFeeFor, setEditingFeeFor] = useState<string | null>(null);
+  const [newFee, setNewFee] = useState<string>('');
+
+  const handleUpdateFee = async (instructorId: string) => {
+    const parsedFee = parseInt(newFee, 10);
+    if (isNaN(parsedFee) || parsedFee < 0 || parsedFee > 100) {
+      setError('Porcentaje de comisión inválido (debe ser 0-100)');
+      return;
+    }
+
+    setProcessing(instructorId);
+    setError(null);
+    setSuccessMsg(null);
+
+    try {
+      const res = await fetch('/api/admin/payouts/fee', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ instructorId, platformFeePercent: parsedFee }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al actualizar comisión');
+      
+      setSuccessMsg(`Comisión actualizada al ${parsedFee}% exitosamente.`);
+      setEditingFeeFor(null);
+      fetchStats();
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setProcessing(false);
+    }
+  };
+
   const ChartTooltip = ({ active, payload, label }: any) => {
     if (!active || !payload?.length) return null;
     return (
@@ -182,13 +223,13 @@ export default function AdminPayoutsPage() {
         </div>
         <Button
           onClick={() => handleProcessPayouts('manual')}
-          disabled={processing || !hasPending}
+          disabled={!!processing || !hasPending}
           className="bg-blue-600 hover:bg-blue-700 gap-2"
         >
-          {processing ? (
+          {processing === 'all' ? (
             <><Loader2 className="h-4 w-4 animate-spin" />Procesando...</>
           ) : (
-            <><Play className="h-4 w-4" />Procesar Pagos</>
+            <><Play className="h-4 w-4" />Procesar Todos</>
           )}
         </Button>
       </div>
@@ -213,46 +254,51 @@ export default function AdminPayoutsPage() {
           {
             label: 'Total Pendiente',
             value: fmt(stats?.totalPendingPayouts ?? 0),
-            sub: 'Por pagar a instructores',
-            icon: <DollarSign className="h-5 w-5 text-orange-500" />,
-            bg: 'bg-orange-50',
+            sub: 'Monto por transferir a instructores',
+            icon: <DollarSign className="h-5 w-5 text-orange-600" />,
+            bg: 'bg-gradient-to-br from-orange-50 to-orange-100/60 shadow-sm border border-orange-100/50',
             bold: true,
           },
           {
-            label: 'Total Plataforma',
+            label: 'Instructores por Pagar',
+            value: stats?.instructorsWithPendingEarnings?.length ?? 0,
+            sub: `De ${stats?.totalInstructors ?? 0} instructores activos`,
+            icon: <Users className="h-5 w-5 text-purple-600" />,
+            bg: 'bg-gradient-to-br from-purple-50 to-purple-100/60 shadow-sm border border-purple-100/50',
+            bold: true,
+          },
+          {
+            label: 'Ganancias Plataforma',
             value: fmt(stats?.totalPlatformRevenue ?? 0),
-            sub: 'Ganancias acumuladas',
-            icon: <TrendingUp className="h-5 w-5 text-blue-500" />,
-            bg: 'bg-blue-50',
+            sub: 'Histórico acumulado de comisiones',
+            icon: <TrendingUp className="h-5 w-5 text-blue-600" />,
+            bg: 'bg-gradient-to-br from-blue-50 to-blue-100/60 shadow-sm border border-blue-100/50',
             bold: false,
           },
           {
-            label: 'Instructores Activos',
-            value: stats?.totalInstructors ?? 0,
-            sub: `${stats?.instructorsWithPendingEarnings.length ?? 0} con pago pendiente`,
-            icon: <Users className="h-5 w-5 text-purple-500" />,
-            bg: 'bg-purple-50',
-            bold: false,
-          },
-          {
-            label: 'Próximo Pago Automático',
-            value: stats?.nextPayoutDate ? fmtDate(stats.nextPayoutDate) : '—',
-            sub: 'Primer lunes del mes',
-            icon: <Calendar className="h-5 w-5 text-green-500" />,
-            bg: 'bg-green-50',
+            label: 'Último Pago',
+            value: stats?.recentPayouts?.[0] ? fmtDate(stats.recentPayouts[0].processed_at) : 'Sin historial',
+            sub: 'Fecha de la última transacción',
+            icon: <Calendar className="h-5 w-5 text-emerald-600" />,
+            bg: 'bg-gradient-to-br from-emerald-50 to-emerald-100/60 shadow-sm border border-emerald-100/50',
             bold: false,
           },
         ].map((card) => (
-          <Card key={card.label} className={`${card.bg} border-0`}>
-            <CardContent className="p-5">
+          <Card key={card.label} className={`${card.bg} relative overflow-hidden group hover:shadow-md transition-all duration-300`}>
+            <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity pointer-events-none transform translate-x-2 -translate-y-2 scale-150">
+              {card.icon}
+            </div>
+            <CardContent className="p-5 relative z-10">
               <div className="flex items-center justify-between mb-3">
-                <p className="text-sm font-medium text-gray-600">{card.label}</p>
-                {card.icon}
+                <p className="text-sm font-semibold text-gray-700">{card.label}</p>
+                <div className="p-2 bg-white/60 rounded-lg backdrop-blur-sm">
+                  {card.icon}
+                </div>
               </div>
-              <p className={`${card.bold ? 'text-2xl' : 'text-xl'} font-bold text-gray-900`}>
+              <p className={`${card.bold ? 'text-3xl' : 'text-2xl'} font-bold text-gray-900 tracking-tight`}>
                 {card.value}
               </p>
-              <p className="text-xs text-gray-500 mt-1">{card.sub}</p>
+              <p className="text-xs text-gray-600 mt-2 font-medium">{card.sub}</p>
             </CardContent>
           </Card>
         ))}
@@ -331,42 +377,144 @@ export default function AdminPayoutsPage() {
                 <span className="text-right">Pendiente</span>
               </div>
 
-              {stats!.instructorsWithPendingEarnings.map((instructor) => (
-                <div
-                  key={instructor.instructor_id}
-                  className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2 px-4 py-3 bg-gray-50 rounded-lg hover:bg-orange-50 transition-colors"
-                >
-                  {/* Name */}
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
-                      <span className="text-sm font-bold text-purple-600">
-                        {instructor.instructor_name?.charAt(0)?.toUpperCase() ?? '?'}
-                      </span>
+              {stats!.instructorsWithPendingEarnings.map((instructor) => {
+                const isExpanded = expandedRow === instructor.instructor_id;
+                const isReadyForPayout = instructor.pending_amount >= 1500;
+                return (
+                  <div key={instructor.instructor_id} className="bg-gray-50 rounded-lg overflow-hidden transition-colors border">
+                    <div 
+                      className={`grid grid-cols-1 sm:grid-cols-4 items-center gap-2 px-4 py-3 cursor-pointer hover:bg-orange-50 ${isExpanded ? 'bg-orange-50 border-b' : ''}`}
+                      onClick={() => setExpandedRow(isExpanded ? null : instructor.instructor_id)}
+                    >
+                      {/* Name */}
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
+                          <span className="text-sm font-bold text-purple-600">
+                            {instructor.instructor_name?.charAt(0)?.toUpperCase() ?? '?'}
+                          </span>
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">{instructor.instructor_name}</p>
+                          <Badge variant="outline" className={`text-xs mt-0.5 ${isReadyForPayout ? 'border-orange-200 text-orange-700' : 'text-gray-500'}`}>
+                            {isReadyForPayout ? 'Listo para pago' : 'Pendiente (Mín. $1500)'}
+                          </Badge>
+                        </div>
+                      </div>
+
+                      {/* Sales */}
+                      <p className="text-sm text-gray-600 sm:text-right">
+                        <span className="sm:hidden text-gray-400">Ventas: </span>
+                        {instructor.transaction_count}
+                      </p>
+
+                      {/* Total earned */}
+                      <p className="text-sm text-gray-600 sm:text-right">
+                        <span className="sm:hidden text-gray-400">Total ganado: </span>
+                        {fmt(instructor.total_earned)}
+                      </p>
+
+                      {/* Pending & Expand Icon */}
+                      <div className="flex items-center justify-end gap-2">
+                        <p className={`text-lg font-bold sm:text-right ${isReadyForPayout ? 'text-orange-600' : 'text-gray-500'}`}>
+                          {fmt(instructor.pending_amount)}
+                        </p>
+                        {isExpanded ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-medium text-gray-900">{instructor.instructor_name}</p>
-                      <Badge variant="outline" className="text-xs mt-0.5">Pendiente</Badge>
-                    </div>
+                    
+                    {/* Expanded Banking Info */}
+                    {isExpanded && (
+                      <div className="p-4 bg-white border-t space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-sm font-semibold text-gray-700 mb-2">Información Bancaria</p>
+                            {instructor.bank_name ? (
+                              <ul className="text-sm space-y-1 text-gray-600">
+                                <li><span className="font-medium">Banco:</span> {instructor.bank_name}</li>
+                                <li><span className="font-medium">CLABE:</span> {instructor.clabe}</li>
+                                <li><span className="font-medium">Cuenta:</span> {instructor.account_number}</li>
+                                {instructor.business_name && <li><span className="font-medium">Razón Social:</span> {instructor.business_name}</li>}
+                                {instructor.rfc && <li><span className="font-medium">RFC:</span> {instructor.rfc}</li>}
+                              </ul>
+                            ) : (
+                              <p className="text-sm text-red-500 flex items-center gap-1">
+                                <AlertCircle className="w-4 h-4" /> El instructor no ha configurado sus datos.
+                              </p>
+                            )}
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold text-gray-700 mb-2">Comisión de Plataforma</p>
+                            {editingFeeFor === instructor.instructor_id ? (
+                              <div className="flex items-center gap-2 mt-1">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max="100"
+                                  value={newFee}
+                                  onChange={(e) => setNewFee(e.target.value)}
+                                  className="w-20 px-2 py-1 text-sm border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                  placeholder="%"
+                                />
+                                <span className="text-gray-500 text-sm">%</span>
+                                <Button 
+                                  size="sm" 
+                                  onClick={() => handleUpdateFee(instructor.instructor_id)}
+                                  disabled={!!processing || newFee === ''}
+                                  className="h-8 ml-1"
+                                >
+                                  Guardar
+                                </Button>
+                                <Button 
+                                  size="sm" 
+                                  variant="ghost" 
+                                  onClick={() => setEditingFeeFor(null)}
+                                  disabled={!!processing}
+                                  className="h-8"
+                                >
+                                  Cancelar
+                                </Button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-3">
+                                <p className="text-sm text-gray-600">Actual: <span className="font-bold">{instructor.platform_fee_percent}%</span></p>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-7 text-xs"
+                                  onClick={() => {
+                                    setEditingFeeFor(instructor.instructor_id);
+                                    setNewFee(instructor.platform_fee_percent.toString());
+                                  }}
+                                >
+                                  Editar
+                                </Button>
+                              </div>
+                            )}
+                            <p className="text-xs text-gray-400 mt-2">Puedes personalizar la comisión (e.g. 10%, 20%) para este instructor.</p>
+                          </div>
+                        </div>
+
+                        <div className="pt-3 border-t flex justify-end gap-3 items-center">
+                          <p className="text-sm text-gray-500">
+                            Realiza la transferencia en tu banco y luego valida el pago aquí.
+                          </p>
+                          <Button 
+                            variant="default"
+                            disabled={!instructor.bank_name || !!processing}
+                            onClick={() => handleProcessPayouts('manual', instructor.instructor_id)}
+                          >
+                            {processing === instructor.instructor_id ? (
+                              <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Procesando...</>
+                            ) : (
+                              <><CheckCircle2 className="w-4 h-4 mr-2" /> Marcar como Pagado</>
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
-
-                  {/* Sales */}
-                  <p className="text-sm text-gray-600 sm:text-right">
-                    <span className="sm:hidden text-gray-400">Ventas: </span>
-                    {instructor.transaction_count}
-                  </p>
-
-                  {/* Total earned */}
-                  <p className="text-sm text-gray-600 sm:text-right">
-                    <span className="sm:hidden text-gray-400">Total ganado: </span>
-                    {fmt(instructor.total_earned)}
-                  </p>
-
-                  {/* Pending */}
-                  <p className="text-lg font-bold text-orange-600 sm:text-right">
-                    {fmt(instructor.pending_amount)}
-                  </p>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>
@@ -444,9 +592,8 @@ export default function AdminPayoutsPage() {
       <Alert className="border-blue-200 bg-blue-50">
         <AlertCircle className="h-4 w-4 text-blue-600" />
         <AlertDescription className="text-blue-700">
-          Los pagos automáticos se procesan el primer lunes de cada mes via Stripe Connect.
-          Puedes procesarlos manualmente en cualquier momento usando el botón <strong>Procesar Pagos</strong>.
-          Solo los instructores con Stripe Connect activo recibirán transferencias directas.
+          Los pagos se procesan de forma manual mediante transferencia bancaria. Revisa la información de cada instructor
+          depositando la cantidad pendiente directa en su CLABE, y marca la transacción como <strong>Pagado</strong>.
         </AlertDescription>
       </Alert>
     </div>

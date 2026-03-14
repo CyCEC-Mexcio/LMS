@@ -1,4 +1,6 @@
 // app/api/admin/payouts/stats/route.ts
+export const dynamic = 'force-dynamic';
+
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createClient } from '@/lib/supabase/server';
@@ -98,6 +100,12 @@ export async function GET(req: NextRequest) {
         total_sales: number;
         total_earned: number;
         paid_earnings: number;
+        bank_name: string | null;
+        account_number: string | null;
+        clabe: string | null;
+        business_name: string | null;
+        rfc: string | null;
+        platform_fee_percent: number;
       }[];
 
     // Normalise field names — the RPC returns pending_earnings but the
@@ -109,6 +117,12 @@ export async function GET(req: NextRequest) {
       total_earned:     Number(i.total_earned ?? 0),
       paid_earnings:    Number(i.paid_earnings ?? 0),
       transaction_count: Number(i.total_sales ?? 0),
+      bank_name:        i.bank_name,
+      account_number:   i.account_number,
+      clabe:            i.clabe,
+      business_name:    i.business_name,
+      rfc:              i.rfc,
+      platform_fee_percent: Number(i.platform_fee_percent ?? 10),
     }));
 
     // Platform revenue — reverse so chart goes oldest→newest
