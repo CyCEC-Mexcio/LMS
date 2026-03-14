@@ -23,22 +23,34 @@ export async function POST(req: NextRequest) {
 
     const { mode, instructorId: targetInstructorId } = await req.json();
 
-    // Build the query for unpaid completed transactions
+    // Fetch all teacher IDs (role = 'teacher') so we can exclude admin-owned transactions
+    const { data: teacherProfiles } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('role', 'teacher');
+
+    const teacherIds = (teacherProfiles ?? []).map((p) => p.id);
+
+    if (teacherIds.length === 0) {
+      return NextResponse.json({ success: true, message: 'No teachers found', processedCount: 0 });
+    }
+
+    // Build query for unpaid completed transactions belonging to teachers only
     let query = supabase
       .from('transactions')
       .select('instructor_id, instructor_earnings, id, course_id, created_at')
       .eq('paid_out', false)
-      .eq('status', 'completed');
+      .eq('status', 'completed')
+      .in('instructor_id', teacherIds); // ← excludes admin-owned transactions
 
     if (targetInstructorId) {
       query = query.eq('instructor_id', targetInstructorId);
     }
 
-    const { data: instructorsWithEarnings, error: instructorsError } = await query;
+    const { data: pendingTransactions, error: txError } = await query;
+    if (txError) throw txError;
 
-    if (instructorsError) throw instructorsError;
-
-    if (!instructorsWithEarnings || instructorsWithEarnings.length === 0) {
+    if (!pendingTransactions || pendingTransactions.length === 0) {
       return NextResponse.json({
         success: true,
         message: 'No pending payouts to process',
@@ -47,11 +59,11 @@ export async function POST(req: NextRequest) {
     }
 
     // Group by instructor
-    const instructorGroups = instructorsWithEarnings.reduce((acc, t) => {
+    const instructorGroups = pendingTransactions.reduce((acc, t) => {
       if (!acc[t.instructor_id]) acc[t.instructor_id] = [];
       acc[t.instructor_id].push(t);
       return acc;
-    }, {} as Record<string, typeof instructorsWithEarnings>);
+    }, {} as Record<string, typeof pendingTransactions>);
 
     const processedPayouts = [];
     const errors = [];
@@ -62,7 +74,6 @@ export async function POST(req: NextRequest) {
           (sum, t) => sum + Number(t.instructor_earnings), 0
         );
 
-        // Check if teacher has banking info configured
         const { data: bankingInfo } = await supabase
           .from('teacher_banking_info')
           .select('*')

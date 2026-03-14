@@ -2,15 +2,12 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import { createClient } from '@/lib/supabase/server';
 
 export async function GET(req: NextRequest) {
   try {
-    // ✅ cookieStore required — without it createClient crashes
     const supabase = await createClient();
 
-    // Auth + admin check
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -26,15 +23,13 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // ── Run all queries in parallel ──────────────────────────────────────
-
     const [
       allTransactionsResult,
       totalInstructorsResult,
       recentPayoutsResult,
       teacherInfosResult,
     ] = await Promise.all([
-      // 1. Fetch ALL completed transactions to compute both pending earnings AND platform revenue
+      // 1. Fetch ALL completed transactions (used for chart/revenue — includes admin sales)
       supabase
         .from('transactions')
         .select(`
@@ -49,7 +44,7 @@ export async function GET(req: NextRequest) {
         `)
         .eq('status', 'completed'),
 
-      // 2. Total teacher count
+      // 2. Total teacher count (teachers only, not admins)
       supabase
         .from('profiles')
         .select('*', { count: 'exact', head: true })
@@ -74,7 +69,7 @@ export async function GET(req: NextRequest) {
         .order('created_at', { ascending: false })
         .limit(10),
 
-      // 4. Fetch all teacher info (profiles + banking info) so we can build the instructor array
+      // 4. Teacher profiles + banking info (role = 'teacher' only — admins excluded)
       supabase
         .from('profiles')
         .select(`
@@ -96,12 +91,13 @@ export async function GET(req: NextRequest) {
     const allTransactions = allTransactionsResult.data ?? [];
     const teacherProfiles = teacherInfosResult.data ?? [];
 
+    // Build a set of teacher IDs for fast lookup — admins are excluded
+    const teacherIds = new Set(teacherProfiles.map((t) => t.id));
+
     // ── Compute Instructor Earnings ──────────────────────────────────────
 
-    // Map: instructor_id -> stats
     const instructorStats = new Map<string, any>();
 
-    // Initialize map with all teachers
     for (const teacher of teacherProfiles) {
       const banking = Array.isArray(teacher.teacher_banking_info)
         ? teacher.teacher_banking_info[0]
@@ -125,17 +121,14 @@ export async function GET(req: NextRequest) {
 
     let totalPendingPayouts = 0;
 
-    // Process all transactions for instructor earnings
     for (const tx of allTransactions) {
+      // Skip admin-owned transactions — those are platform revenue, no payout needed
+      if (!teacherIds.has(tx.instructor_id)) continue;
+
       const isPaid = tx.paid_out === true;
       const earnings = Number(tx.instructor_earnings ?? 0);
-      const instructorId = tx.instructor_id;
+      const stats = instructorStats.get(tx.instructor_id);
 
-      if (!instructorStats.has(instructorId)) continue; // skip non-teachers or orphaned txs
-
-      const stats = instructorStats.get(instructorId);
-      
-      // Update totals
       stats.total_earned += earnings;
       stats.transaction_count += 1;
 
@@ -147,15 +140,12 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // Filter to only those with pending amounts > 0 (or adjust to show all if preferred, but existing UI filters pending > 0 for this specific table list)
     const normalisedPendingEarnings = Array.from(instructorStats.values())
-      .filter(s => s.pending_amount > 0)
+      .filter((s) => s.pending_amount > 0)
       .sort((a, b) => b.pending_amount - a.pending_amount);
 
+    // ── Platform Revenue Summary (last 6 months, ALL transactions incl. admin) ──
 
-    // ── Compute Platform Revenue Summary (last 6 months) ──────────────────
-
-    // Group transactions by YYYY-MM
     const monthlyStats = new Map<string, {
       month: string;
       total_transactions: number;
@@ -182,17 +172,22 @@ export async function GET(req: NextRequest) {
       const m = monthlyStats.get(monthKey)!;
       m.total_transactions += 1;
       m.total_revenue += Number(tx.total_amount ?? 0);
-      m.platform_earnings += Number(tx.platform_fee ?? 0);
-      m.instructor_earnings += Number(tx.instructor_earnings ?? 0);
+
+      // For admin-owned courses, the full instructor_earnings is also platform profit
+      if (!teacherIds.has(tx.instructor_id)) {
+        m.platform_earnings += Number(tx.total_amount ?? 0);
+        // instructor_earnings stays 0 for admin courses on the chart
+      } else {
+        m.platform_earnings += Number(tx.platform_fee ?? 0);
+        m.instructor_earnings += Number(tx.instructor_earnings ?? 0);
+      }
     }
 
-    // Sort months DESC and take last 6, then reverse for chart
     let platformRevenue = Array.from(monthlyStats.values())
-      .sort((a, b) => b.month.localeCompare(a.month)) // newest first
+      .sort((a, b) => b.month.localeCompare(a.month))
       .slice(0, 6)
-      .reverse(); // oldest to newest for chart
+      .reverse();
 
-    // Total platform revenue all-time
     const totalPlatformRevenue = Array.from(monthlyStats.values()).reduce(
       (sum, r) => sum + r.platform_earnings,
       0
@@ -202,16 +197,13 @@ export async function GET(req: NextRequest) {
     const nextPayoutDate = getFallbackNextPayoutDate();
 
     return NextResponse.json({
-      // Summary numbers (used by stat cards)
       totalPendingPayouts,
       totalInstructors,
       nextPayoutDate,
       totalPlatformRevenue,
-
-      // Table data
       instructorsWithPendingEarnings: normalisedPendingEarnings,
-      recentPayouts:                  recentPayoutsResult.data ?? [],
-      platformRevenueSummary:         platformRevenue,
+      recentPayouts: recentPayoutsResult.data ?? [],
+      platformRevenueSummary: platformRevenue,
     });
 
   } catch (error: any) {
@@ -223,16 +215,13 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// 15-day payout cycle: payouts on the 1st and 15th of each month
 function getFallbackNextPayoutDate(): string {
   const today = new Date();
   const dayOfMonth = today.getDate();
   let next: Date;
   if (dayOfMonth < 15) {
-    // Next payout is the 15th of this month
     next = new Date(today.getFullYear(), today.getMonth(), 15);
   } else {
-    // Next payout is the 1st of next month
     next = new Date(today.getFullYear(), today.getMonth() + 1, 1);
   }
   return next.toISOString();

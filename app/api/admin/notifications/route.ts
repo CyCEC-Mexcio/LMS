@@ -1,3 +1,4 @@
+// app/api/admin/notifications/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
@@ -22,43 +23,52 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Run queries in parallel
     const [
       pendingCoursesResult,
       unpaidTransactionsResult,
+      teacherIdsResult,
     ] = await Promise.all([
-      // 1. Pending courses (not approved)
+      // 1. Pending courses awaiting approval
       supabase
         .from('courses')
         .select('*', { count: 'exact', head: true })
         .eq('is_approved', false),
 
-      // 2. Fetch all unpaid completed transactions to compute pending earnings
+      // 2. Unpaid completed transactions
       supabase
         .from('transactions')
         .select('instructor_id, instructor_earnings')
         .eq('paid_out', false)
         .eq('status', 'completed'),
+
+      // 3. All teacher IDs (role = 'teacher' only — excludes admins)
+      supabase
+        .from('profiles')
+        .select('id')
+        .eq('role', 'teacher'),
     ]);
 
     const pendingCoursesCount = pendingCoursesResult.count ?? 0;
-    
-    // Count instructors who have at least $1500 pending
+
+    // Build a set of valid teacher IDs so admin transactions are ignored
+    const teacherIds = new Set((teacherIdsResult.data ?? []).map((p) => p.id));
+
+    // Count teachers with >= $1500 pending (admins excluded)
     const instructorPendingTotals = new Map<string, number>();
     for (const tx of (unpaidTransactionsResult.data ?? [])) {
       if (!tx.instructor_id) continue;
-      const current = instructorPendingTotals.get(tx.instructor_id) || 0;
+      if (!teacherIds.has(tx.instructor_id)) continue; // skip admin-owned transactions
+
+      const current = instructorPendingTotals.get(tx.instructor_id) ?? 0;
       instructorPendingTotals.set(tx.instructor_id, current + Number(tx.instructor_earnings ?? 0));
     }
 
     let pendingPayoutsCount = 0;
     for (const total of instructorPendingTotals.values()) {
-      if (total >= 1500) {
-        pendingPayoutsCount++;
-      }
+      if (total >= 1500) pendingPayoutsCount++;
     }
 
-    // Calculate next payout date (1st or 15th of month)
+    // Next payout date (1st or 15th of month)
     const today = new Date();
     const dayOfMonth = today.getDate();
     let nextPayoutDate: Date;
@@ -67,10 +77,10 @@ export async function GET(req: NextRequest) {
     } else {
       nextPayoutDate = new Date(today.getFullYear(), today.getMonth() + 1, 1);
     }
-    const daysUntilPayout = Math.max(0, Math.ceil(
-      (nextPayoutDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
-    ));
-    // Show payout reminder when within 3 days
+    const daysUntilPayout = Math.max(
+      0,
+      Math.ceil((nextPayoutDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+    );
     const payoutReminder = daysUntilPayout <= 3 ? 1 : 0;
 
     return NextResponse.json({
@@ -78,7 +88,7 @@ export async function GET(req: NextRequest) {
       pendingPayoutsCount,
       nextPayoutDate: nextPayoutDate.toISOString(),
       daysUntilPayout,
-      totalNotifications: pendingCoursesCount + pendingPayoutsCount + payoutReminder
+      totalNotifications: pendingCoursesCount + pendingPayoutsCount + payoutReminder,
     });
 
   } catch (error: any) {
