@@ -39,7 +39,7 @@ export const navigationItems: NavItem[] = [
     roles: ["student"],
   },
   {
-    title: "Configuración",           // ✅ was pointing to 404 — now correct path
+    title: "Configuración",         
     href: "/student/settings",
     icon: "⚙️",
     roles: ["student"],
@@ -77,7 +77,7 @@ export const navigationItems: NavItem[] = [
     roles: ["teacher"],
   },
   {
-    title: "Configuración",           // ✅ was pointing to 404 — now correct path
+    title: "Configuración",           
     href: "/teacher/settings",
     icon: "⚙️",
     roles: ["teacher"],

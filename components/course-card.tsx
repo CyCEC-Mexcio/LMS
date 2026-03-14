@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
-import { BookOpen, Clock, Star, Users } from "lucide-react";
+import { BookOpen, Star, Users } from "lucide-react";
 
 type CourseCardProps = {
   id: string;
@@ -8,6 +8,7 @@ type CourseCardProps = {
   description: string;
   thumbnail: string | null;
   instructor: string;
+  instructorAvatar?: string | null;
   category: string;
   price: number;
   level: string;
@@ -23,6 +24,7 @@ export default function CourseCard({
   description,
   thumbnail,
   instructor,
+  instructorAvatar,
   category,
   price,
   level,
@@ -67,10 +69,19 @@ export default function CourseCard({
 
           {/* Instructor */}
           <div className="flex items-center gap-2 mb-3">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-xs font-semibold text-white">
-              {instructor?.charAt(0)?.toUpperCase() || "?"}
-            </div>
-            <span className="text-sm text-gray-700 font-medium">
+            {instructorAvatar ? (
+              <img
+                src={instructorAvatar}
+                alt={instructor}
+                className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                referrerPolicy="no-referrer"
+              />
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-xs font-semibold text-white flex-shrink-0">
+                {instructor?.charAt(0)?.toUpperCase() || "?"}
+              </div>
+            )}
+            <span className="text-sm text-gray-700 font-medium line-clamp-1">
               {instructor}
             </span>
           </div>

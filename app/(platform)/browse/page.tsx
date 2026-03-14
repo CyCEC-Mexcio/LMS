@@ -1,10 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
-import { cookies } from "next/headers";
 import CourseCard from "@/components/course-card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
-import { link } from "fs";
+import Link from "next/link";
 
 export default async function BrowsePage({
   searchParams,
@@ -12,17 +11,16 @@ export default async function BrowsePage({
   searchParams: Promise<{ category?: string; search?: string }>;
 }) {
   const supabase = await createClient();
-
   const params = await searchParams;
 
-  // Build query for published and approved courses WITH sections and lessons
   let query = supabase
     .from("courses")
     .select(
       `
       *,
       profiles:teacher_id (
-        full_name
+        full_name,
+        avatar_url
       ),
       enrollments (
         id
@@ -49,9 +47,7 @@ export default async function BrowsePage({
     );
   }
 
-  const { data: courses } = await query.order("created_at", {
-    ascending: false,
-  });
+  const { data: courses } = await query.order("created_at", { ascending: false });
 
   const { data: allCourses } = await supabase
     .from("courses")
@@ -68,11 +64,9 @@ export default async function BrowsePage({
     const reviews = course.reviews || [];
     const averageRating =
       reviews.length > 0
-        ? reviews.reduce((sum: number, r: any) => sum + r.rating, 0) /
-          reviews.length
+        ? reviews.reduce((sum: number, r: any) => sum + r.rating, 0) / reviews.length
         : 0;
 
-    // Calculate total chapters and lessons
     const totalChapters = course.sections?.length || 0;
     const totalLessons =
       course.sections?.reduce(
@@ -94,9 +88,7 @@ export default async function BrowsePage({
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
-            Explorar Cursos
-          </h1>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">Explorar Cursos</h1>
           <p className="text-lg text-gray-600">
             Descubre y aprende con nuestros cursos profesionales
           </p>
@@ -154,6 +146,7 @@ export default async function BrowsePage({
                 description={course.description}
                 thumbnail={course.thumbnail_url}
                 instructor={course.instructor_name}
+                instructorAvatar={(course.profiles as any)?.avatar_url ?? null}
                 category={course.category}
                 price={course.price}
                 level={course.level}
@@ -176,12 +169,12 @@ export default async function BrowsePage({
                 : "Aún no hay cursos disponibles"}
             </p>
             {(params.search || params.category) && (
-              <link>
+              <Link
                 href="/browse"
                 className="text-blue-600 hover:text-blue-800 font-medium"
-              
+              >
                 Ver todos los cursos
-              </link>
+              </Link>
             )}
           </div>
         )}

@@ -10,6 +10,8 @@ import VideoPlayer from "./video-player";
 import Link from "next/link";
 import QuizComponent from "./quiz-component";
 import { useRouter } from "next/navigation";
+import CourseReview from "./course-review";
+import CelebrationModal from "./celebration-modal";
 
 type Quiz = {
   id: string;
@@ -56,6 +58,7 @@ type Course = {
   title: string;
   description: string | null;
   instructor_name: string | null;
+  certificate_type?: string | null;   // ← add this
   sections: Section[];
 };
 
@@ -93,6 +96,7 @@ export default function CoursePlayer({
   const [quizAttempts, setQuizAttempts] = useState<Map<string, QuizAttempt>>(new Map());
   const [showQuiz, setShowQuiz] = useState(false);
   const [completingCourse, setCompletingCourse] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
   const [quizAttemptsLoaded, setQuizAttemptsLoaded] = useState(false);
   
   const supabase = createClient();
@@ -416,10 +420,7 @@ export default function CoursePlayer({
         return;
       }
 
-      alert(
-        "🎉 ¡Felicidades! Has completado el curso exitosamente.\n\nTu certificado está disponible en la sección 'Mis Certificados'."
-      );
-      router.push("/student/certificates");
+      setShowCelebration(true);
     } catch (error) {
       console.error("Error completing course:", error);
       alert("Error de conexión al completar el curso. Por favor intenta de nuevo.");
@@ -446,6 +447,14 @@ export default function CoursePlayer({
 
   return (
     <div className="flex flex-col h-[calc(100vh-64px)]">
+      {/* Celebration Modal */}
+      {showCelebration && (
+        <CelebrationModal
+          courseTitle={course.title}
+          certificateType={(course.certificate_type as any) ?? "certificate"}
+          onClose={() => setShowCelebration(false)}
+        />
+      )}
       {/* Preview Banner */}
       {isPreview && (
         <div className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-4 py-3 flex items-center justify-between flex-shrink-0 shadow-md">
@@ -519,6 +528,11 @@ export default function CoursePlayer({
                 </Button>
               </div>
             </Card>
+          )}
+
+          {/* ⭐ Course Review — shown once all lessons are complete */}
+          {!isPreview && isAllLessonsComplete() && (
+            <CourseReview courseId={course.id} studentId={studentId} />
           )}
 
           {/* Show Quiz OR Show Video/Content */}

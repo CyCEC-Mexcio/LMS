@@ -153,7 +153,7 @@ export default async function StudentProgressPage() {
       </div>
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
@@ -194,19 +194,6 @@ export default async function StudentProgressPage() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
-              <Clock size={16} />
-              Tiempo Total
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-purple-600">
-              {totalHoursWatched}h {remainingMinutes}m
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Course Progress List */}
@@ -300,7 +287,7 @@ export default async function StudentProgressPage() {
 
                     {/* Action Button */}
                     <div className="mt-3">
-                      <Link href={`/student/courses/${item.course.slug}`}>
+                      <Link href={`/student/courses/${item.course.id}`}>
                         <Button size="sm">
                           {item.progressPercentage === 0
                             ? "Comenzar Curso"

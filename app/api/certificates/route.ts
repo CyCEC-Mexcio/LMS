@@ -125,7 +125,7 @@ export async function POST(request: Request) {
         course_id: courseId,
         certificate_number: certificateNumber,
       })
-      .select(`*, student:profiles!student_id (full_name, email), course:courses (title, instructor_name, organization)`)
+      .select(`*, student:profiles!student_id (full_name), course:courses (title, instructor_name, organization)`)
       .single();
 
     if (insertError) {
@@ -158,7 +158,7 @@ export async function GET(request: Request) {
 
     const { data: certificate, error } = await supabase
       .from("certificates")
-      .select(`*, student:profiles!student_id (full_name, email), course:courses (title, instructor_name, organization)`)
+      .select(`*, student:profiles!student_id (full_name), course:courses (title, instructor_name, organization)`)
       .eq("certificate_number", certificateNumber)
       .maybeSingle();
 

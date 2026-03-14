@@ -1,6 +1,6 @@
 {
   "name": "cycec-lms",
-  "version": "9.1.33",
+  "version": "10.3.17",
   "private": true,
   "scripts": {
     "dev": "next dev",
