@@ -53,7 +53,7 @@ export function HeroSection() {
           <div className="relative">
             <div className="relative rounded-2xl overflow-hidden shadow-2xl">
               <Image 
-                src="/images/placeholder.jpg"
+                src="/images/Equipo profesional en capacitación.jpeg"
                 alt="Equipo profesional en capacitación"
                 width={600}
                 height={450}
@@ -63,7 +63,7 @@ export function HeroSection() {
             </div>
             
             {/* Floating badge */}
-            <div className="absolute -bottom-6 -left-6 bg-card rounded-xl p-4 shadow-xl border border-border">
+            <div className="absolute -bottom-6 -right-6 bg-card rounded-xl p-4 shadow-xl border border-border">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
                   <Award className="h-6 w-6 text-primary" />

@@ -52,7 +52,7 @@ export function CoursesSection() {
           <div className="relative">
             <div className="rounded-2xl overflow-hidden shadow-2xl">
               <Image 
-                src="/images/placeholder.jpg"
+                src="/images/Aprendizaje en línea.jpeg"
                 alt="Aprendizaje en línea"
                 width={600}
                 height={400}
