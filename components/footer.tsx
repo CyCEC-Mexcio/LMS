@@ -11,7 +11,7 @@ const quickLinks = [
 
 const contactInfo = [
   { icon: Mail, label: "contacto@cycecmexico.com" },
-  { icon: Phone, label: "+52 (55) 1234-5678" },
+  { icon: Phone, label: "+52 222 162 5048" },
   { icon: MapPin, label: "Puebla, México" },
 ]
 
