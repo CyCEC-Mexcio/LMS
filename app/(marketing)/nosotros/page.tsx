@@ -63,21 +63,21 @@ export default function NosotrosPage() {
             </h1>
             <div className="space-y-4 text-muted-foreground leading-relaxed">
               <p>
-                CYCEC México es un centro de capacitación, evaluación y
-                certificación de competencias enfocado en fortalecer el
-                desarrollo profesional de personas y organizaciones en todo
-                México.
+                CYCEC México es un centro especializado en capacitación, evaluación, 
+                examinación y certificación de competencias, enfocado en impulsar el 
+                desarrollo profesional y organizacional a nivel nacional.
               </p>
               <p>
-                Ofrecemos servicios de consultoría, capacitación especializada y
-                evaluación alineada a estándares nacionales, ayudando a validar
-                habilidades reales y mejorar el desempeño laboral.
+                Ofrecemos servicios integrales de consultoría, capacitación 
+                especializada, evaluación y examinación, alineados a estándares 
+                nacionales, que permiten validar competencias laborales, fortalecer 
+                el talento humano y mejorar el desempeño en las organizaciones.
               </p>
               <p>
-                Trabajamos bajo esquemas reconocidos, como los estándares del
-                Sistema Nacional de Competencias (CONOCER), garantizando
-                procesos confiables, transparentes y con valor real para el
-                mercado laboral.
+                Operamos bajo esquemas de reconocimiento oficial, como 
+                los estándares del Sistema Nacional de Competencias (CONOCER) y 
+                la certificación de personas ISO 17024:2012, garantizando procesos 
+                confiables, transparentes y alineados a las necesidades del mercado laboral.
               </p>
             </div>
           </div>
@@ -197,10 +197,11 @@ export default function NosotrosPage() {
                 </h2>
               </div>
               <p className="text-muted-foreground leading-relaxed">
-                Brindar servicios de capacitación, evaluación y certificación de
-                competencias accesibles, prácticos y alineados a estándares
-                oficiales, que impulsen el desarrollo profesional, la
-                empleabilidad y el desempeño de personas y organizaciones.
+                Contribuir al desarrollo de las organizaciones y de las personas 
+                mediante servicios profesionales de consultoría en sistemas de gestión ISO, 
+                evaluación de competencias laborales y capacitación en seguridad y 
+                salud en el trabajo, garantizando servicios confiables, consistentes y alineados a los 
+                requisitos legales, normativos y de nuestros clientes. 
               </p>
             </div>
 
@@ -215,10 +216,10 @@ export default function NosotrosPage() {
                 </h2>
               </div>
               <p className="text-muted-foreground leading-relaxed">
-                Ser un referente nacional en certificación de competencias y
-                capacitación profesional, reconocido por la calidad de nuestros
-                servicios, la credibilidad de nuestros procesos y el impacto
-                positivo en el desarrollo laboral en México.
+                Ser reconocidos por contribuir al desarrollo de organizaciones y 
+                personas a través de servicios de consultoría en normas ISO, 
+                evaluación de competencias y capacitación en seguridad y salud en el trabajo, 
+                garantizando el cumplimiento de los requisitos legales, normativos y de nuestros clientes.
               </p>
             </div>
           </div>
