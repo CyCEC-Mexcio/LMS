@@ -11,12 +11,22 @@ import {
   Clock,
   MessageCircle,
   Send,
-  Linkedin,
   Facebook,
   Instagram,
-  Twitter,
   ArrowRight,
 } from "lucide-react";
+
+// TikTok icon (not in lucide-react, so we use a simple SVG)
+const TikTokIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    className="h-6 w-6"
+  >
+    <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.32 6.32 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.18 8.18 0 0 0 4.78 1.52V6.75a4.85 4.85 0 0 1-1.01-.06z" />
+  </svg>
+);
 
 export default function ContactoPage() {
   const contactMethods = [
@@ -29,55 +39,45 @@ export default function ContactoPage() {
     },
     {
       icon: MessageCircle,
-      title: "WhatsApp",
+      title: "WhatsApp / Teléfono",
       value: "+52 221 385 1925",
       href: "https://wa.me/522213851925",
       color: "bg-green-500/10 text-green-600",
     },
     {
-      icon: Phone,
-      title: "Teléfono",
-      value: "+52 221 385 1925",
-      href: "tel:+522213851925",
-      color: "bg-blue-500/10 text-blue-600",
-    },
-    {
       icon: MapPin,
       title: "Ubicación",
       value: "México",
-      href: "#",
+      href: "#mapa",
       color: "bg-purple-500/10 text-purple-600",
     },
   ];
 
   const socialLinks = [
     {
-      icon: Linkedin,
-      name: "LinkedIn",
-      handle: "CyCec Mexico",
-      href: "https://linkedin.com/company/cycecmexico",
-      color: "bg-[#0077B5]/10 text-[#0077B5] hover:bg-[#0077B5] hover:text-white",
-    },
-    {
       icon: Facebook,
       name: "Facebook",
-      handle: "CyCEC Mexcio",
+      handle: "CyCEC México",
       href: "https://facebook.com/cycecmexico",
-      color: "bg-[#1877F2]/10 text-[#1877F2] hover:bg-[#1877F2] hover:text-white",
+      color:
+        "bg-[#1877F2]/10 text-[#1877F2] hover:bg-[#1877F2] hover:text-white",
     },
     {
       icon: Instagram,
       name: "Instagram",
       handle: "@cycecmexico",
       href: "https://instagram.com/cycecmexico",
-      color: "bg-[#E4405F]/10 text-[#E4405F] hover:bg-[#E4405F] hover:text-white",
+      color:
+        "bg-[#E4405F]/10 text-[#E4405F] hover:bg-[#E4405F] hover:text-white",
     },
     {
-      icon: Twitter,
-      name: "X (Twitter)",
+      // TikTok
+      icon: TikTokIcon,
+      name: "TikTok",
       handle: "@cycecmexico",
-      href: "https://twitter.com/cycecmexico",
-      color: "bg-[#1F1F1F]/10 text-[#1F1F1F] hover:bg-[#1F1F1F] hover:text-white",
+      href: "https://tiktok.com/@cycecmexico",
+      color:
+        "bg-[#010101]/10 text-[#010101] hover:bg-[#010101] hover:text-white",
     },
   ];
 
@@ -131,14 +131,16 @@ export default function ContactoPage() {
               </div>
             </div>
 
+            {/* Hero image — overlay removed */}
             <div className="relative h-[300px] md:h-[400px] rounded-3xl overflow-hidden shadow-2xl">
               <Image
-                src="/images/placeholder.jpg"
+                src="/images/Soporte al cliente CyCEC México.png"
                 alt="Soporte al cliente CyCEC México"
                 fill
                 className="object-cover"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#8E0F14]/60 to-transparent" />
+              {/* Subtle bottom gradient for text legibility only — no red hue */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
               <div className="absolute bottom-6 left-6 right-6">
                 <p className="text-white font-semibold text-lg">
                   Atención personalizada
@@ -152,64 +154,65 @@ export default function ContactoPage() {
         </div>
       </section>
 
-      {/* Contact Methods Grid */}
-      <section className="py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-2xl font-bold text-foreground mb-8 text-center">
-            Formas de contactarnos
-          </h2>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {contactMethods.map((method) => (
-              <Link
-                key={method.title}
-                href={method.href}
-                className="bg-card rounded-2xl p-6 border border-border hover:border-primary/30 hover:shadow-lg transition-all duration-300 group"
-              >
-                <div
-                  className={`w-12 h-12 rounded-xl ${method.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}
-                >
-                  <method.icon className="h-6 w-6" />
-                </div>
-                <h3 className="font-semibold text-foreground mb-1">
-                  {method.title}
-                </h3>
-                <p className="text-muted-foreground text-sm">{method.value}</p>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Social Media & Contact Form */}
+      {/* Social Media, Contact Methods & Contact Form */}
       <section className="py-16 bg-muted/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-12">
-            {/* Social Media */}
-            <div>
-              <h2 className="text-2xl font-bold text-foreground mb-6">
-                Síguenos en redes sociales
-              </h2>
-              <p className="text-muted-foreground mb-8">
-                Mantente al día con nuestras novedades, cursos y consejos para
-                tu desarrollo profesional.
-              </p>
-              <div className="grid sm:grid-cols-2 gap-4">
-                {socialLinks.map((social) => (
-                  <Link
-                    key={social.name}
-                    href={social.href}
-                    target="_blank"
-                    className={`flex items-center gap-4 p-4 rounded-xl border border-border bg-card ${social.color} transition-all duration-300 group`}
-                  >
-                    <div className="w-12 h-12 rounded-xl bg-current/10 flex items-center justify-center group-hover:bg-white/20 transition-colors">
-                      <social.icon className="h-6 w-6" />
-                    </div>
-                    <div>
-                      <p className="font-semibold">{social.name}</p>
-                      <p className="text-sm opacity-80">{social.handle}</p>
-                    </div>
-                  </Link>
-                ))}
+            {/* Left column: contact methods + social media */}
+            <div className="space-y-10">
+              {/* Contact Methods */}
+              <div>
+                <h2 className="text-2xl font-bold text-foreground mb-6">
+                  Formas de contactarnos
+                </h2>
+                <div className="grid sm:grid-cols-3 gap-4">
+                  {contactMethods.map((method) => (
+                    <Link
+                      key={method.title}
+                      href={method.href}
+                      className="bg-card rounded-2xl p-5 border border-border hover:border-primary/30 hover:shadow-lg transition-all duration-300 group"
+                    >
+                      <div
+                        className={`w-11 h-11 rounded-xl ${method.color} flex items-center justify-center mb-3 group-hover:scale-110 transition-transform`}
+                      >
+                        <method.icon className="h-5 w-5" />
+                      </div>
+                      <h3 className="font-semibold text-foreground text-sm mb-1">
+                        {method.title}
+                      </h3>
+                      <p className="text-muted-foreground text-xs">{method.value}</p>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+
+              {/* Social Media */}
+              <div>
+                <h2 className="text-2xl font-bold text-foreground mb-3">
+                  Síguenos en redes sociales
+                </h2>
+                <p className="text-muted-foreground mb-6">
+                  Mantente al día con nuestras novedades, cursos y consejos para
+                  tu desarrollo profesional.
+                </p>
+                <div className="grid sm:grid-cols-2 gap-4">
+                  {socialLinks.map((social) => (
+                    <Link
+                      key={social.name}
+                      href={social.href}
+                      target="_blank"
+                      className={`flex items-center gap-4 p-4 rounded-xl border border-border bg-card ${social.color} transition-all duration-300 group`}
+                    >
+                      <div className="w-12 h-12 rounded-xl bg-current/10 flex items-center justify-center group-hover:bg-white/20 transition-colors">
+                        <social.icon />
+                      </div>
+                      <div>
+                        <p className="font-semibold">{social.name}</p>
+                        <p className="text-sm opacity-80">{social.handle}</p>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
               </div>
             </div>
 
@@ -286,7 +289,34 @@ export default function ContactoPage() {
         </div>
       </section>
 
-      {/* Map/Location CTA */}
+      {/* Google Maps Section */}
+      <section id="mapa" className="py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-8">
+            <h2 className="text-2xl font-bold text-foreground mb-2">
+              Nuestra ubicación
+            </h2>
+            <p className="text-muted-foreground flex items-center justify-center gap-2">
+              <MapPin className="h-4 w-4" />
+              Puebla, México
+            </p>
+          </div>
+          <div className="rounded-3xl overflow-hidden border border-border shadow-lg h-[400px]">
+            <iframe
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d120877.46064541853!2d-98.28509439453125!3d19.041443!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x85cfc0d6b6ded52b%3A0x3b7a26fb53df7478!2sPuebla%2C%20Pue.%2C%20Mexico!5e0!3m2!1sen!2smx!4v1700000000000"
+              width="100%"
+              height="100%"
+              style={{ border: 0 }}
+              allowFullScreen
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+              title="Ubicación CyCEC México — Puebla"
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* CTA */}
       <section className="py-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="bg-[#8E0F14] rounded-3xl p-8 md:p-12">

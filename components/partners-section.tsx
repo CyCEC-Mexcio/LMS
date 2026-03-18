@@ -4,7 +4,7 @@ export function PartnersSection() {
     { name: "ISO 9001", label: "ISO 9001:2015" },
     { name: "ICEMEXICO", label: "ICE México" },
     { name: "CONOCER", label: "CONOCER" },
-    { name: "SEP", label: "Secretaría de Educación Pública" },
+    { name: "COMPECER", label: "Secretaría de Educación Pública" },
   ]
 
   return (

@@ -1,22 +1,31 @@
-import { Quote } from "lucide-react"
+import { Star } from "lucide-react";
 
 const testimonials = [
   {
-    content: "Este curso ha sido una inversión invaluable para mi desarrollo profesional. La formación en ISO 9001:2015 es clara, práctica y fácil de entender. Me siento mucho más seguro al aplicar los principios de calidad en mi trabajo.",
-    author: "Álvaro Pérez",
-    role: "Profesional en gestión de calidad",
+    content:
+      "Excelente curso, los instructores son muy profesionales y el contenido está muy bien estructurado. Aprendí todo lo necesario para implementar ISO 9001 en mi empresa.",
+    author: "Alvaro Pérez",
+    role: "Gerente de Calidad",
+    image:
+      "https://cursoscycecmexico.com/wp-content/uploads/2026/01/cycec-emp1.jpeg",
   },
   {
-    content: "Lo que más valoro de las capacitaciones de CYCEC México es su enfoque práctico y la relevancia directa de los contenidos para el día a día laboral. Cada sesión aporta herramientas aplicables de inmediato.",
-    author: "Monserrat Castillo",
-    role: "Coordinadora y Profesional administrativa",
+    content:
+      "La plataforma es muy intuitiva y el material didáctico de primera calidad. Recomiendo ampliamente estos cursos para cualquier profesional que busque certificarse.",
+    author: "Montserrat Castillo",
+    role: "Gerente de seguridad e higiene",
+    image:
+      "https://cursoscycecmexico.com/wp-content/uploads/2026/01/cycec-emp3.jpeg",
   },
   {
-    content: "Este curso en línea fue justo lo que necesitaba. Pude aprender a mi propio ritmo, adaptándolo completamente a mi horario. La plataforma es intuitiva y el contenido está muy bien estructurado.",
-    author: "Itzel Andrade",
-    role: "Profesional independiente",
+    content:
+      "Obtuve mi certificación gracias a esta alineación. El seguimiento personalizado y la atención del equipo de CyCEC México fue excepcional. ¡Totalmente recomendado!",
+    author: "Roberto Cepa",
+    role: "Responsable de calidad",
+    image:
+      "https://cursoscycecmexico.com/wp-content/uploads/2026/02/testimonial-colega-de-argentina.jpeg",
   },
-]
+];
 
 export function TestimonialsSection() {
   return (
@@ -33,24 +42,32 @@ export function TestimonialsSection() {
 
         <div className="grid md:grid-cols-3 gap-8">
           {testimonials.map((testimonial) => (
-            <div 
+            <div
               key={testimonial.author}
-              className="bg-background rounded-2xl p-8 border border-border hover:shadow-lg transition-shadow"
+              className="bg-background rounded-2xl p-8 shadow-lg hover:shadow-xl transition-shadow"
             >
-              <Quote className="h-8 w-8 text-primary/30 mb-4" />
-              
-              <p className="text-foreground leading-relaxed mb-6">
-                {testimonial.content}
+              {/* 5 stars */}
+              <div className="flex items-center gap-1 mb-4">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Star
+                    key={i}
+                    className="w-5 h-5 fill-yellow-400 text-yellow-400"
+                  />
+                ))}
+              </div>
+
+              <p className="text-foreground text-lg leading-relaxed mb-6">
+                &ldquo;{testimonial.content}&rdquo;
               </p>
-              
-              <div className="flex items-center gap-4 pt-4 border-t border-border">
-                <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-                  <span className="text-primary font-semibold text-lg">
-                    {testimonial.author.charAt(0)}
-                  </span>
-                </div>
+
+              <div className="flex items-center gap-4">
+                <img
+                  src={testimonial.image}
+                  alt={testimonial.author}
+                  className="w-12 h-12 rounded-full object-cover border-2 border-primary/20 flex-shrink-0"
+                />
                 <div>
-                  <p className="font-semibold text-foreground">{testimonial.author}</p>
+                  <p className="font-bold text-foreground">{testimonial.author}</p>
                   <p className="text-sm text-muted-foreground">{testimonial.role}</p>
                 </div>
               </div>
@@ -59,5 +76,5 @@ export function TestimonialsSection() {
         </div>
       </div>
     </section>
-  )
+  );
 }

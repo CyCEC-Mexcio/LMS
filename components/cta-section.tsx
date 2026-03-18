@@ -11,7 +11,7 @@ export function CtaSection() {
           <div className="relative order-2 lg:order-1">
             <div className="rounded-2xl overflow-hidden shadow-2xl">
               <Image 
-                src="/images/placeholder.jpg"
+                src="/images/Capacitación persona.jpeg"
                 alt="Capacitación profesional"
                 width={600}
                 height={400}
@@ -41,7 +41,7 @@ export function CtaSection() {
               {[
                 "Certificaciones reconocidas a nivel nacional",
                 "Programas alineados a normas ISO",
-                "Validez ante CONOCER y SEP",
+                "Validez ante CONOCER y compecer",
                 "Instructores con experiencia práctica",
               ].map((item) => (
                 <li key={item} className="flex items-center gap-3 text-foreground">

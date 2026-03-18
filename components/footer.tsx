@@ -105,7 +105,7 @@ export function Footer() {
                 />
               </div>
               <span className="text-sm text-background/50">
-                © 2025 CyCEC México. Todos los derechos reservados.
+                © 2026 CyCEC México. Todos los derechos reservados.
               </span>
             </div>
 

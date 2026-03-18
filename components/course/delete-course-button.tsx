@@ -36,127 +36,100 @@ export default function DeleteCourseButton({
     setError(null);
 
     try {
-      // Get sections first to delete lessons and their related data
-      const { data: sections } = await supabase
+      // Helper: throws with the table name if Supabase returns an error
+      const run = async (label: string, query: PromiseLike<{ error: any }>) => {
+        const { error } = await query;
+        if (error) throw new Error(`[${label}] ${error.message}`);
+      };
+
+      // ── 1. Sections → Lessons ──────────────────────────────────────────────
+      const { data: sections, error: sectionsErr } = await supabase
         .from("sections")
         .select("id")
         .eq("course_id", courseId);
+      if (sectionsErr) throw new Error(`[sections] ${sectionsErr.message}`);
 
       if (sections && sections.length > 0) {
         const sectionIds = sections.map((s) => s.id);
 
-        // Get all lessons in these sections
-        const { data: lessons } = await supabase
+        const { data: lessons, error: lessonsErr } = await supabase
           .from("lessons")
           .select("id")
           .in("section_id", sectionIds);
+        if (lessonsErr) throw new Error(`[lessons select] ${lessonsErr.message}`);
 
         if (lessons && lessons.length > 0) {
           const lessonIds = lessons.map((l) => l.id);
 
-          // Delete quiz attempts first (references quiz_questions indirectly through quizzes)
-          const { data: quizzes } = await supabase
+          // Quizzes
+          const { data: quizzes, error: quizzesErr } = await supabase
             .from("quizzes")
             .select("id")
             .in("lesson_id", lessonIds);
+          if (quizzesErr) throw new Error(`[quizzes select] ${quizzesErr.message}`);
 
           if (quizzes && quizzes.length > 0) {
             const quizIds = quizzes.map((q) => q.id);
-            
-            // Delete quiz attempts
-            await supabase
-              .from("quiz_attempts")
-              .delete()
-              .in("quiz_id", quizIds);
-
-            // Delete quiz questions
-            await supabase
-              .from("quiz_questions")
-              .delete()
-              .in("quiz_id", quizIds);
-
-            // Delete quizzes
-            await supabase
-              .from("quizzes")
-              .delete()
-              .in("lesson_id", lessonIds);
+            await run("quiz_attempts delete", supabase.from("quiz_attempts").delete().in("quiz_id", quizIds));
+            await run("quiz_questions delete", supabase.from("quiz_questions").delete().in("quiz_id", quizIds));
+            await run("quizzes delete", supabase.from("quizzes").delete().in("lesson_id", lessonIds));
           }
 
-          // Delete progress
-          await supabase
-            .from("progress")
-            .delete()
-            .in("lesson_id", lessonIds);
-
-          // Delete lessons
-          await supabase
-            .from("lessons")
-            .delete()
-            .in("section_id", sectionIds);
+          await run("progress delete", supabase.from("progress").delete().in("lesson_id", lessonIds));
+          await run("lessons delete", supabase.from("lessons").delete().in("section_id", sectionIds));
         }
 
-        // Delete sections
-        await supabase.from("sections").delete().eq("course_id", courseId);
+        await run("sections delete", supabase.from("sections").delete().eq("course_id", courseId));
       }
 
-      // Get enrollments to delete transactions
-      const { data: enrollments } = await supabase
+      // ── 2. Enrollments → Transactions → Payout items ──────────────────────
+      const { data: enrollments, error: enrollmentsErr } = await supabase
         .from("enrollments")
         .select("id")
         .eq("course_id", courseId);
+      if (enrollmentsErr) throw new Error(`[enrollments select] ${enrollmentsErr.message}`);
 
       if (enrollments && enrollments.length > 0) {
         const enrollmentIds = enrollments.map((e) => e.id);
 
-        // Delete payout_items that reference transactions for this course
-        const { data: transactions } = await supabase
+        const { data: transactions, error: txErr } = await supabase
           .from("transactions")
           .select("id")
           .in("enrollment_id", enrollmentIds);
+        if (txErr) throw new Error(`[transactions select] ${txErr.message}`);
 
         if (transactions && transactions.length > 0) {
           const transactionIds = transactions.map((t) => t.id);
-          
-          // Delete payout items
-          await supabase
-            .from("payout_items")
-            .delete()
-            .in("transaction_id", transactionIds);
+          await run("payout_items delete", supabase.from("payout_items").delete().in("transaction_id", transactionIds));
         }
 
-        // Delete transactions
-        await supabase
-          .from("transactions")
-          .delete()
-          .in("enrollment_id", enrollmentIds);
+        await run("transactions delete", supabase.from("transactions").delete().in("enrollment_id", enrollmentIds));
+        await run("enrollments delete", supabase.from("enrollments").delete().eq("course_id", courseId));
       }
 
-      // Delete enrollments
-      await supabase.from("enrollments").delete().eq("course_id", courseId);
+      // ── 3. Remaining course data ───────────────────────────────────────────
+      await run("certificates delete", supabase.from("certificates").delete().eq("course_id", courseId));
+      await run("reviews delete", supabase.from("reviews").delete().eq("course_id", courseId));
+      await run("admin_notifications delete", supabase.from("admin_notifications").delete().eq("course_id", courseId));
 
-      // Delete certificates
-      await supabase.from("certificates").delete().eq("course_id", courseId);
-
-      // Delete reviews
-      await supabase.from("reviews").delete().eq("course_id", courseId);
-
-      // Delete admin notifications
-      await supabase
-        .from("admin_notifications")
-        .delete()
-        .eq("course_id", courseId);
-
-      // Finally, delete the course itself
-      const { error: courseError } = await supabase
+      // ── 4. Delete the course itself ────────────────────────────────────────
+      const { error: courseError, count } = await supabase
         .from("courses")
-        .delete()
+        .delete({ count: "exact" })   // returns how many rows were actually deleted
         .eq("id", courseId);
 
-      if (courseError) throw courseError;
+      if (courseError) throw new Error(`[course delete] ${courseError.message}`);
+
+      // count === 0 means RLS silently blocked the delete with no error
+      if (count === 0) {
+        throw new Error(
+          "El curso no fue eliminado. Verifica que tienes permisos de administrador en Supabase (política RLS en la tabla courses)."
+        );
+      }
 
       setDeleteDialogOpen(false);
+      router.push("/admin/courses");
       router.refresh();
-      router.push("/admin/courses"); // Navigate back to courses list
     } catch (err: any) {
       console.error("Error deleting course:", err);
       setError(err.message || "Error al eliminar el curso");
@@ -205,7 +178,7 @@ export default function DeleteCourseButton({
           {error && (
             <Alert className="border-red-200 bg-red-50">
               <AlertTriangle className="h-4 w-4 text-red-600" />
-              <AlertDescription className="text-red-800">
+              <AlertDescription className="text-red-800 text-xs break-words">
                 {error}
               </AlertDescription>
             </Alert>

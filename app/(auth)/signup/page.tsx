@@ -111,7 +111,7 @@ export default function SignupPage() {
           </div>
         </div>
 
-        <p className="text-white/30 text-xs">© 2025 CYCEC México. Todos los derechos reservados.</p>
+        <p className="text-white/30 text-xs">© 2026 CYCEC México. Todos los derechos reservados.</p>
       </div>
 
       {/* RIGHT PANEL — form */}

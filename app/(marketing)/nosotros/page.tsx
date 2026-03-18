@@ -27,7 +27,7 @@ export default function NosotrosPage() {
     { name: "ISO 9001:2015", display: "ISO 9001:2015" },
     { name: "ICEMEXICO", display: "ICEMEXICO" },
     { name: "CONOCER", display: "CONOCER" },
-    { name: "SEP", display: "SEP" },
+    { name: "compecer", display: "compecer" },
   ];
 
   return (
@@ -48,7 +48,7 @@ export default function NosotrosPage() {
               <p className="text-lg font-semibold text-foreground">
                 Porfirio López Cohezaltitla
               </p>
-              <p className="text-muted-foreground">Director Ejecutivo</p>
+              <p className="text-muted-foreground">CEO</p>
             </footer>
           </blockquote>
         </div>
@@ -89,7 +89,7 @@ export default function NosotrosPage() {
         <div className="absolute inset-0 grid grid-cols-3 gap-1">
           <div className="relative overflow-hidden">
             <Image
-              src="/images/placeholder.jpg"
+              src="/images/Equipo colaborando en oficina moderna.jpeg"
               alt="Equipo colaborando en oficina moderna"
               fill
               className="object-cover hover:scale-105 transition-transform duration-500"
@@ -97,7 +97,7 @@ export default function NosotrosPage() {
           </div>
           <div className="relative overflow-hidden">
             <Image
-              src="/images/placeholder.jpg"
+              src="/images/Presentación profesional.png"
               alt="Presentación profesional"
               fill
               className="object-cover hover:scale-105 transition-transform duration-500"
@@ -105,7 +105,7 @@ export default function NosotrosPage() {
           </div>
           <div className="relative overflow-hidden">
             <Image
-              src="/images/placeholder.jpg"
+              src="/images/Profesional trabajando.jpeg"
               alt="Profesional trabajando"
               fill
               className="object-cover hover:scale-105 transition-transform duration-500"
@@ -277,7 +277,7 @@ export default function NosotrosPage() {
             <div className="grid md:grid-cols-2">
               <div className="relative h-48 md:h-auto">
                 <Image
-                  src="/images/placeholder.jpg"
+                  src="/images/Capacitación profesional.jpeg"
                   alt="Capacitación profesional"
                   fill
                   className="object-cover"
@@ -292,7 +292,7 @@ export default function NosotrosPage() {
                   contáctanos para recibir asesoría personalizada.
                 </p>
                 <Button asChild className="w-fit group">
-                  <Link href="/cursos">
+                  <Link href="/courses">
                     Ver cursos
                     <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
                   </Link>
