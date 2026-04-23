@@ -6,7 +6,6 @@ import { FeaturesSection } from "@/components/features-section"
 import { CtaSection } from "@/components/cta-section"
 import { TestimonialsSection } from "@/components/testimonials-section"
 import { Footer } from "@/components/footer"
-import { SpeedInsights } from "@vercel/speed-insights/next"
 
 export default function LandingPage() {
   return (
@@ -19,7 +18,6 @@ export default function LandingPage() {
       <CtaSection />
       <TestimonialsSection />
       <Footer />
-      <SpeedInsights />
     </main>
   )
 }

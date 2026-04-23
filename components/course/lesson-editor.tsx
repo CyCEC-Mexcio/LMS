@@ -629,8 +629,6 @@ export default function ModularLessonEditor({
           {modules.map((module, index) => (
             <div
               key={module.id}
-              draggable
-              onDragStart={() => handleDragStart(module.id)}
               onDragOver={(e) => handleDragOver(e, module.id)}
               onDrop={handleDrop}
               className={`transition-all ${
@@ -641,7 +639,14 @@ export default function ModularLessonEditor({
                 {/* Module Header */}
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
-                    <GripVertical className="w-5 h-5 text-gray-400 cursor-move" />
+                    <div
+                      draggable
+                      onDragStart={() => handleDragStart(module.id)}
+                      className="cursor-move select-none p-1 rounded hover:bg-gray-100 transition-colors"
+                      title="Arrastra para reordenar"
+                    >
+                      <GripVertical className="w-5 h-5 text-gray-400" />
+                    </div>
                     <div className="flex items-center gap-2">
                       {module.type === "video" && (
                         <>
@@ -966,7 +971,7 @@ function VideoModuleEditor({
     } catch (error) {
       console.error("Error uploading to Mux:", error);
       setUploadStatus("error");
-      alert("Error al subir el video. Por favor intenta de nuevo.");
+      showToast("Error al subir el video. Por favor intenta de nuevo.", "error");
     } finally {
       setUploading(false);
     }
@@ -990,7 +995,7 @@ function VideoModuleEditor({
             <SelectItem value="youtube">YouTube</SelectItem>
             <SelectItem value="mux">Mux (Subir Video)</SelectItem>
             <SelectItem value="google_drive">Google Drive</SelectItem>
-            <SelectItem value="onedrive">OneDrive / Outlook</SelectItem>
+            <SelectItem value="onedrive">OneDrive</SelectItem>
             <SelectItem value="embed">Código Embebido</SelectItem>
           </SelectContent>
         </Select>
@@ -1159,7 +1164,7 @@ function VideoModuleEditor({
                   <li>Copia el enlace y pégalo aquí</li>
                 </ol>
                 <p className="mt-2 text-blue-600 text-xs">
-                  También puedes usar: Clic derecho → <strong>Insertar</strong> → copiar la URL del iframe
+                  Acepta enlaces cortos (1drv.ms), enlaces completos de OneDrive, y URLs de inserción (embed).
                 </p>
               </div>
             </div>
@@ -1177,28 +1182,74 @@ function VideoModuleEditor({
 
           {module.onedrive_url && (() => {
             const url = module.onedrive_url.trim();
-            // Already an embed URL
-            if (url.includes("/embed")) {
+
+            /**
+             * Converts any OneDrive share URL into an embeddable URL.
+             * Supports:
+             * - Already-embed URLs (passthrough)
+             * - 1drv.ms short links (base64 encode trick)
+             * - onedrive.live.com share/redir/view URLs
+             * - sharepoint.com URLs
+             */
+            const getOnedriveEmbedUrl = (rawUrl: string): { embedUrl: string | null; error: string | null } => {
+              // 1. Already an embed URL — use as-is
+              if (rawUrl.includes("/embed")) {
+                return { embedUrl: rawUrl, error: null };
+              }
+
+              // 2. Extract src from a pasted <iframe> tag
+              const iframeMatch = rawUrl.match(/src=["']([^"']+)["']/);
+              if (iframeMatch) {
+                return { embedUrl: iframeMatch[1], error: null };
+              }
+
+              // 3. 1drv.ms short links — convert using Microsoft's base64 method
+              if (rawUrl.includes("1drv.ms")) {
+                try {
+                  // Microsoft documented approach: base64-encode the share URL,
+                  // replace / with _, + with -, trim trailing =, prepend 'u!'
+                  const base64 = btoa(rawUrl)
+                    .replace(/\//g, "_")
+                    .replace(/\+/g, "-")
+                    .replace(/=+$/, "");
+                  const apiUrl = `https://api.onedrive.com/v1.0/shares/u!${base64}/root`;
+                  // Construct an embed URL via the OneDrive web embed endpoint
+                  const embedUrl = `https://onedrive.live.com/embed?resid=u!${base64}&authkey=`;
+                  // Alternative: direct download-as-embed (more reliable for video playback)
+                  const directEmbedUrl = `https://api.onedrive.com/v1.0/shares/u!${base64}/root/content`;
+                  return { embedUrl: directEmbedUrl, error: null };
+                } catch {
+                  return { embedUrl: null, error: "No se pudo convertir el enlace corto. Verifica que sea un enlace válido de OneDrive." };
+                }
+              }
+
+              // 4. onedrive.live.com or sharepoint.com share URLs
+              if (rawUrl.includes("onedrive.live.com") || rawUrl.includes("sharepoint.com")) {
+                const embedUrl = rawUrl
+                  .replace("redir?", "embed?")
+                  .replace("/view.aspx?", "/embed?")
+                  .replace("?view=true", "?action=embedview");
+                return { embedUrl, error: null };
+              }
+
+              return { embedUrl: null, error: "Formato de URL no reconocido. Usa un enlace de OneDrive, un enlace corto (1drv.ms), o una URL de inserción." };
+            };
+
+            const { embedUrl, error } = getOnedriveEmbedUrl(url);
+
+            if (error) {
               return (
                 <div className="mt-3">
-                  <Label className="text-sm text-gray-600 mb-2 block">Vista Previa</Label>
-                  <div className="w-full aspect-video bg-black rounded-lg overflow-hidden border border-gray-300">
-                    <iframe
-                      src={url}
-                      className="w-full h-full"
-                      allow="autoplay; encrypted-media"
-                      allowFullScreen
-                    />
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                    <p className="text-sm text-red-800">
+                      <strong>Error:</strong> {error}
+                    </p>
                   </div>
                 </div>
               );
             }
-            // Convert share link to embed: replace /redir to /embed or add embed param
-            const embedUrl = url
-              .replace("redir?", "embed?")
-              .replace("/view.aspx?", "/embed?");
-            // Try to use it as embed
-            if (url.includes("onedrive.live.com") || url.includes("sharepoint.com")) {
+
+            if (embedUrl) {
               return (
                 <div className="mt-3">
                   <Label className="text-sm text-gray-600 mb-2 block">Vista Previa</Label>
@@ -1210,23 +1261,20 @@ function VideoModuleEditor({
                       allowFullScreen
                     />
                   </div>
-                  <p className="text-xs text-amber-600 mt-2">
-                    Si no se muestra la vista previa, usa la opción <strong>Insertar → Generar código</strong> en OneDrive y pega la URL del iframe.
+                  {url.includes("1drv.ms") && (
+                    <p className="text-xs text-green-600 mt-2 flex items-center gap-1">
+                      <CheckCircle className="w-3 h-3" />
+                      Enlace corto convertido automáticamente.
+                    </p>
+                  )}
+                  <p className="text-xs text-amber-600 mt-1">
+                    Si no se muestra la vista previa, verifica que el archivo esté compartido como <strong>&quot;Cualquier persona con el vínculo&quot;</strong>.
                   </p>
                 </div>
               );
             }
-            // 1drv.ms short links or unknown format
-            return (
-              <div className="mt-3">
-                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-                  <p className="text-sm text-amber-800">
-                    <strong>Nota:</strong> Los enlaces cortos (1drv.ms) pueden no funcionar directamente.
-                    Para mejor resultado, usa el enlace completo de OneDrive o la URL de inserción.
-                  </p>
-                </div>
-              </div>
-            );
+
+            return null;
           })()}
         </div>
       )}

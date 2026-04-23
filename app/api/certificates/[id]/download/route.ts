@@ -2,16 +2,15 @@
 // Requires: npm install pdf-lib
 
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
 
 export async function GET(
   request: Request,
-  { params }: { params: Promise<{ id: string }> } // ✅ Next.js 15: params is a Promise
+  { params }: { params: Promise<{ id: string }> } // Next.js 15: params is a Promise
 ) {
   try {
-    const { id } = await params; // ✅ Must await before use
+    const { id } = await params;
 
     const supabase = await createClient();
 
@@ -23,7 +22,7 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // ✅ FIX: include student_id in the select so ownership check works
+    // Fetch certificate with course data including logo
     const { data: cert, error } = await supabase
       .from("certificates")
       .select(`
@@ -31,12 +30,14 @@ export async function GET(
         certificate_number,
         issued_at,
         student_id,
+        course_id,
         student:profiles!student_id (full_name),
         course:courses (
           title,
           instructor_name,
           organization,
-          certificate_type
+          certificate_type,
+          certificate_logo_url
         )
       `)
       .eq("id", id)
@@ -63,6 +64,44 @@ export async function GET(
       }
     }
 
+    // Calculate total course hours from lesson durations
+    const courseData = cert.course as any;
+    const studentData = cert.student as any;
+    const courseId = (cert as any).course_id;
+
+    let totalHours = 0;
+    try {
+      // Get sections for this course
+      const { data: sections } = await supabase
+        .from("sections")
+        .select("id")
+        .eq("course_id", courseId);
+
+      if (sections && sections.length > 0) {
+        const sectionIds = sections.map((s: any) => s.id);
+
+        const { data: lessons } = await supabase
+          .from("lessons")
+          .select("duration_minutes")
+          .in("section_id", sectionIds);
+
+        if (lessons) {
+          const totalMinutes = lessons.reduce(
+            (sum: number, l: any) => sum + (l.duration_minutes || 0),
+            0
+          );
+          totalHours = Math.round(totalMinutes / 60);
+        }
+      }
+    } catch {
+      // Fallback: leave totalHours as 0
+    }
+
+    const isCertificate = courseData?.certificate_type !== "constancia";
+    const docTypeLabel = isCertificate
+      ? "OTORGA EL PRESENTE CERTIFICADO"
+      : "OTORGA LA PRESENTE CONSTANCIA";
+
     // ─── Generate PDF ────────────────────────────────────────────────────────
     const pdfDoc = await PDFDocument.create();
 
@@ -71,16 +110,16 @@ export async function GET(
     const { width, height } = page.getSize();
 
     const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
-    const fontBold    = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-    const fontItalic  = await pdfDoc.embedFont(StandardFonts.HelveticaOblique);
+    const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+    const fontItalic = await pdfDoc.embedFont(StandardFonts.HelveticaOblique);
 
-    const courseData  = cert.course  as any;
-    const studentData = cert.student as any;
-
-    const isCertificate = courseData?.certificate_type !== "constancia";
-    const docTypeLabel  = isCertificate
-      ? "CERTIFICADO DE FINALIZACIÓN"
-      : "CONSTANCIA DE PARTICIPACIÓN";
+    // Colors
+    const red = rgb(0.56, 0.06, 0.08);        // #8E0F14 — CyCEC brand red
+    const darkText = rgb(0.15, 0.15, 0.15);
+    const gray = rgb(0.5, 0.5, 0.5);
+    const lightGray = rgb(0.75, 0.75, 0.75);
+    const veryLightGray = rgb(0.93, 0.93, 0.93);
+    const white = rgb(1, 1, 1);
 
     // Helper: draw text centered on x
     const drawCentered = (
@@ -94,111 +133,256 @@ export async function GET(
       page.drawText(text, { x: width / 2 - w / 2, y, size, font, color });
     };
 
-    // ── Background: deep navy ─────────────────────────────────────────────
-    page.drawRectangle({ x: 0, y: 0, width, height, color: rgb(0.07, 0.1, 0.2) });
+    // ── White background ──────────────────────────────────────────────────
+    page.drawRectangle({ x: 0, y: 0, width, height, color: white });
 
-    // ── Gold top + bottom bars ────────────────────────────────────────────
-    page.drawRectangle({ x: 0, y: height - 8, width, height: 8, color: rgb(0.85, 0.65, 0.13) });
-    page.drawRectangle({ x: 0, y: 0,          width, height: 8, color: rgb(0.85, 0.65, 0.13) });
+    // ── Red corner brackets (top-left, bottom-right) ──────────────────────
+    const bracketThick = 5;
+    const bracketLen = 70;
 
-    // ── Inner white card ──────────────────────────────────────────────────
-    page.drawRectangle({
-      x: 40, y: 40,
-      width: width - 80, height: height - 80,
-      color: rgb(1, 1, 1),
-      opacity: 0.97,
-    });
+    // Top-left red L
+    page.drawRectangle({ x: 25, y: height - 25 - bracketThick, width: bracketLen, height: bracketThick, color: red });
+    page.drawRectangle({ x: 25, y: height - 25 - bracketLen, width: bracketThick, height: bracketLen, color: red });
 
-    // ── Gold left + right accent strips ───────────────────────────────────
-    page.drawRectangle({ x: 40,         y: 40, width: 6, height: height - 80, color: rgb(0.85, 0.65, 0.13) });
-    page.drawRectangle({ x: width - 46, y: 40, width: 6, height: height - 80, color: rgb(0.85, 0.65, 0.13) });
+    // Bottom-right red L
+    page.drawRectangle({ x: width - 25 - bracketLen, y: 25, width: bracketLen, height: bracketThick, color: red });
+    page.drawRectangle({ x: width - 25 - bracketThick, y: 25, width: bracketThick, height: bracketLen, color: red });
 
-    // ── Org name ──────────────────────────────────────────────────────────
-    drawCentered(
-      (courseData?.organization || "Plataforma LMS").toUpperCase(),
-      height - 72, 11, fontBold, rgb(0.85, 0.65, 0.13)
-    );
+    // ── Gray corner brackets (top-right, bottom-left) ─────────────────────
+    const grayBracketThick = 3;
+    const grayBracketLen = 55;
 
-    // ── Document type label ───────────────────────────────────────────────
-    drawCentered(docTypeLabel, height - 108, 22, fontBold, rgb(0.07, 0.1, 0.2));
+    // Top-right gray L
+    page.drawRectangle({ x: width - 25 - grayBracketLen, y: height - 25 - grayBracketThick, width: grayBracketLen, height: grayBracketThick, color: lightGray });
+    page.drawRectangle({ x: width - 25 - grayBracketThick, y: height - 25 - grayBracketLen, width: grayBracketThick, height: grayBracketLen, color: lightGray });
 
-    // ── Gold divider ──────────────────────────────────────────────────────
-    page.drawRectangle({
-      x: width / 2 - 180, y: height - 120,
-      width: 360, height: 1.5,
-      color: rgb(0.85, 0.65, 0.13),
-    });
+    // Bottom-left gray L
+    page.drawRectangle({ x: 25, y: 25, width: grayBracketLen, height: grayBracketThick, color: lightGray });
+    page.drawRectangle({ x: 25, y: 25, width: grayBracketThick, height: grayBracketLen, color: lightGray });
 
-    // ── "Se otorga a" ─────────────────────────────────────────────────────
-    drawCentered("Se otorga a", height - 155, 13, fontItalic, rgb(0.4, 0.4, 0.4));
+    // ── Organization logo (top-left) ──────────────────────────────────────
+    const logoUrl = courseData?.certificate_logo_url;
+    let logoDrawn = false;
+
+    if (logoUrl) {
+      try {
+        const logoResponse = await fetch(logoUrl);
+        if (logoResponse.ok) {
+          const logoBytes = new Uint8Array(await logoResponse.arrayBuffer());
+          const contentType = logoResponse.headers.get("content-type") || "";
+
+          let logoImage;
+          if (contentType.includes("png") || logoUrl.toLowerCase().endsWith(".png")) {
+            logoImage = await pdfDoc.embedPng(logoBytes);
+          } else {
+            logoImage = await pdfDoc.embedJpg(logoBytes);
+          }
+
+          // Draw logo preserving aspect ratio, max 150×80
+          const maxW = 150;
+          const maxH = 80;
+          const aspectRatio = logoImage.width / logoImage.height;
+          let drawW = maxW;
+          let drawH = drawW / aspectRatio;
+          if (drawH > maxH) {
+            drawH = maxH;
+            drawW = drawH * aspectRatio;
+          }
+
+          page.drawImage(logoImage, {
+            x: 55,
+            y: height - 50 - drawH,
+            width: drawW,
+            height: drawH,
+          });
+          logoDrawn = true;
+        }
+      } catch (logoErr) {
+        console.error("Error embedding logo:", logoErr);
+      }
+    }
+
+    // Fallback: org name in top-left if no logo
+    if (!logoDrawn) {
+      const orgFallback = (courseData?.organization || "").toUpperCase();
+      if (orgFallback) {
+        page.drawText(orgFallback, {
+          x: 55,
+          y: height - 75,
+          size: 11,
+          font: fontBold,
+          color: darkText,
+        });
+      }
+    }
+
+    // ── Organization name (centered, large) ───────────────────────────────
+    const orgName = (courseData?.organization || "CyCEC MÉXICO").toUpperCase();
+    drawCentered(orgName, height - 85, 22, fontBold, darkText);
+
+    // ── Full legal name (centered, smaller) ───────────────────────────────
+    // Only show if the org name is short (i.e. there's likely a longer legal name)
+    const legalName = "CONSULTORÍA, CAPACITACIÓN Y CENTRO EVALUADOR DE ESTÁNDARES DE COMPETENCIA EN MÉXICO SAS DE C.V.";
+    if (orgName.includes("CYCEC") || orgName.includes("CyCEC")) {
+      let legalSize = 7;
+      while (fontRegular.widthOfTextAtSize(legalName, legalSize) > width - 120 && legalSize > 5) {
+        legalSize -= 0.5;
+      }
+      drawCentered(legalName, height - 102, legalSize, fontRegular, gray);
+    }
+
+    // ── "OTORGA LA PRESENTE CONSTANCIA / CERTIFICADO" ─────────────────────
+    drawCentered(docTypeLabel, height - 150, 16, fontBold, darkText);
+
+    // ── "a:" label ────────────────────────────────────────────────────────
+    drawCentered("a:", height - 180, 14, fontItalic, gray);
 
     // ── Student name ──────────────────────────────────────────────────────
     const studentName = studentData?.full_name || "Estudiante";
-    drawCentered(studentName, height - 205, 36, fontBold, rgb(0.07, 0.1, 0.2));
+    let nameSize = 34;
+    while (fontBold.widthOfTextAtSize(studentName, nameSize) > width - 160 && nameSize > 18) {
+      nameSize -= 1;
+    }
+    drawCentered(studentName, height - 225, nameSize, fontBold, darkText);
 
-    // ── Name underline ────────────────────────────────────────────────────
-    const nameW = Math.min(fontBold.widthOfTextAtSize(studentName, 36), 400);
+    // ── Red underline under student name ──────────────────────────────────
+    const nameW = fontBold.widthOfTextAtSize(studentName, nameSize);
+    const underlineW = Math.min(nameW + 40, width - 160);
     page.drawRectangle({
-      x: width / 2 - nameW / 2, y: height - 212,
-      width: nameW, height: 2,
-      color: rgb(0.85, 0.65, 0.13), opacity: 0.6,
+      x: width / 2 - underlineW / 2,
+      y: height - 233,
+      width: underlineW,
+      height: 2.5,
+      color: red,
     });
 
-    // ── Completion label ──────────────────────────────────────────────────
+    // ── Completion text ───────────────────────────────────────────────────
     drawCentered(
-      isCertificate
-        ? "Por haber completado exitosamente el curso"
-        : "Por su participación en el curso",
-      height - 248, 12, fontRegular, rgb(0.4, 0.4, 0.4)
+      "POR SU DESTACADA PARTICIPACIÓN Y ACREDITACIÓN EN EL CURSO EN LÍNEA:",
+      height - 268,
+      10,
+      fontRegular,
+      gray
     );
 
-    // ── Course title (auto-shrink font if too long) ───────────────────────
+    // ── Course title in light gray box ────────────────────────────────────
     const courseTitle = courseData?.title || "Curso";
-    let courseFontSize = 24;
+    let courseFontSize = 18;
     while (
-      fontBold.widthOfTextAtSize(courseTitle, courseFontSize) > width - 160 &&
-      courseFontSize > 14
-    ) courseFontSize -= 1;
-    drawCentered(courseTitle, height - 290, courseFontSize, fontBold, rgb(0.15, 0.35, 0.75));
+      fontBold.widthOfTextAtSize(courseTitle, courseFontSize) > width - 200 &&
+      courseFontSize > 12
+    ) {
+      courseFontSize -= 1;
+    }
+    const courseTitleW = fontBold.widthOfTextAtSize(courseTitle, courseFontSize);
+    const boxPadX = 30;
+    const boxPadY = 10;
+    const boxW = courseTitleW + boxPadX * 2;
+    const boxH = courseFontSize + boxPadY * 2;
+    const boxX = width / 2 - boxW / 2;
+    const boxY = height - 315;
 
-    // ── Bottom info row ───────────────────────────────────────────────────
-    const infoY = 108;
     page.drawRectangle({
-      x: 70, y: infoY + 48,
-      width: width - 140, height: 0.75,
-      color: rgb(0.85, 0.85, 0.85),
+      x: boxX,
+      y: boxY,
+      width: boxW,
+      height: boxH,
+      color: veryLightGray,
     });
 
-    const drawInfoCol = (label: string, value: string, x: number) => {
-      const lw = fontRegular.widthOfTextAtSize(label, 9);
-      page.drawText(label, {
-        x: x - lw / 2, y: infoY + 30,
-        size: 9, font: fontRegular,
-        color: rgb(0.55, 0.55, 0.55),
-      });
-      let vSize = 12;
-      while (fontBold.widthOfTextAtSize(value, vSize) > 190 && vSize > 8) vSize -= 0.5;
-      const vw = fontBold.widthOfTextAtSize(value, vSize);
-      page.drawText(value, {
-        x: x - vw / 2, y: infoY + 12,
-        size: vSize, font: fontBold,
-        color: rgb(0.07, 0.1, 0.2),
-      });
-    };
-
-    const issuedDate = new Date((cert as any).issued_at).toLocaleDateString("es-MX", {
-      year: "numeric", month: "long", day: "numeric",
+    page.drawText(courseTitle, {
+      x: width / 2 - courseTitleW / 2,
+      y: boxY + boxPadY,
+      size: courseFontSize,
+      font: fontBold,
+      color: darkText,
     });
 
-    drawInfoCol("INSTRUCTOR",       courseData?.instructor_name || "—",  140);
-    drawInfoCol("FECHA DE EMISIÓN", issuedDate,                          width / 2);
-    drawInfoCol("FOLIO",            (cert as any).certificate_number,    width - 140);
+    // ── Bottom section ────────────────────────────────────────────────────
+    const bottomY = 90;
 
-    // ── Verify URL ────────────────────────────────────────────────────────
-    drawCentered(
-      `Verificar en: /verify-certificate/${(cert as any).certificate_number}`,
-      52, 8, fontItalic, rgb(0.65, 0.65, 0.65)
+    // Signature line (bottom-left)
+    const sigLineX = 120;
+    const sigLineW = 220;
+    page.drawRectangle({
+      x: sigLineX,
+      y: bottomY + 45,
+      width: sigLineW,
+      height: 1,
+      color: darkText,
+    });
+
+    // Signature name
+    const sigName = "Lic. Elian Idalyt López Ramírez";
+    const sigNameW = fontBold.widthOfTextAtSize(sigName, 9);
+    page.drawText(sigName, {
+      x: sigLineX + sigLineW / 2 - sigNameW / 2,
+      y: bottomY + 30,
+      size: 9,
+      font: fontBold,
+      color: darkText,
+    });
+
+    // Signature title
+    const sigTitle = "DIRECTORA ACADÉMICA";
+    const sigTitleW = fontRegular.widthOfTextAtSize(sigTitle, 8);
+    page.drawText(sigTitle, {
+      x: sigLineX + sigLineW / 2 - sigTitleW / 2,
+      y: bottomY + 18,
+      size: 8,
+      font: fontRegular,
+      color: gray,
+    });
+
+    // Hours and date (bottom-right)
+    const rightX = width - 300;
+
+    if (totalHours > 0) {
+      const hoursText = `FORMACIÓN DE ${totalHours} HORAS`;
+      page.drawText(hoursText, {
+        x: rightX,
+        y: bottomY + 50,
+        size: 10,
+        font: fontBold,
+        color: darkText,
+      });
+    }
+
+    // Issue date
+    const issuedDate = new Date((cert as any).issued_at).toLocaleDateString(
+      "es-MX",
+      { year: "numeric", month: "long", day: "numeric" }
     );
+    const dateLabel = `FECHA DE EXPEDICIÓN: ${issuedDate}`;
+    page.drawText(dateLabel, {
+      x: rightX,
+      y: bottomY + 32,
+      size: 9,
+      font: fontRegular,
+      color: gray,
+    });
+
+    // Folio number (bottom center, subtle)
+    const folioText = `Folio: ${(cert as any).certificate_number}`;
+    const folioW = fontRegular.widthOfTextAtSize(folioText, 7);
+    page.drawText(folioText, {
+      x: width / 2 - folioW / 2,
+      y: 35,
+      size: 7,
+      font: fontRegular,
+      color: lightGray,
+    });
+
+    // Verification URL (very bottom, subtle)
+    const verifyText = `Verificar en: /verify-certificate/${(cert as any).certificate_number}`;
+    const verifyW = fontItalic.widthOfTextAtSize(verifyText, 6.5);
+    page.drawText(verifyText, {
+      x: width / 2 - verifyW / 2,
+      y: 22,
+      size: 6.5,
+      font: fontItalic,
+      color: lightGray,
+    });
 
     // ── Serialize & return ────────────────────────────────────────────────
     const pdfBytes = await pdfDoc.save();
@@ -207,11 +391,13 @@ export async function GET(
       .replace(/\s+/g, "-")
       .toLowerCase();
 
+    const fileLabel = isCertificate ? "certificado" : "constancia";
+
     return new NextResponse(Buffer.from(pdfBytes), {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="${safeTitle}-certificado.pdf"`,
+        "Content-Disposition": `attachment; filename="${safeTitle}-${fileLabel}.pdf"`,
         "Content-Length": pdfBytes.length.toString(),
       },
     });

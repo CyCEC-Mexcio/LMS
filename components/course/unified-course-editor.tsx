@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -275,6 +276,16 @@ function CertificateSettings({
   const [logoInputUrl, setLogoInputUrl] = useState<string>(logoUrl || "");
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [deleteLogoConfirm, setDeleteLogoConfirm] = useState(false);
+
+  const handleDeleteLogo = () => {
+    setLogo(null);
+    if (logoInputMode === "url") {
+      setLogoInputUrl("");
+    }
+    setDeleteLogoConfirm(false);
+    toast.success("Logo eliminado");
+  };
 
   const handleLogoUpload = async (file: File) => {
     const fileExt = file.name.split(".").pop();
@@ -296,12 +307,12 @@ function CertificateSettings({
 
   const handleSave = async () => {
     if (!type) {
-      alert("Por favor selecciona un tipo de documento");
+      toast.error("Por favor selecciona un tipo de documento");
       return;
     }
 
     if (!logo) {
-      alert("Por favor sube el logo de tu organización");
+      toast.error("Por favor sube el logo de tu organización");
       return;
     }
 
@@ -317,11 +328,11 @@ function CertificateSettings({
 
       if (error) throw error;
 
-      alert("Configuración guardada exitosamente");
+      toast.success("Configuración guardada exitosamente");
       onUpdate();
     } catch (error) {
       console.error("Error saving:", error);
-      alert("Error al guardar la configuración");
+      toast.error("Error al guardar la configuración");
     } finally {
       setSaving(false);
     }
@@ -329,6 +340,13 @@ function CertificateSettings({
 
   return (
     <div className="space-y-4">
+      <DeleteConfirmDialog
+        isOpen={deleteLogoConfirm}
+        onClose={() => setDeleteLogoConfirm(false)}
+        onConfirm={handleDeleteLogo}
+        title="¿Eliminar logo?"
+        itemName="Logo de la organización"
+      />
       <div className="flex items-center gap-3">
         <div className="p-2 bg-sky-100 rounded-lg">
           <Award className="w-5 h-5 text-sky-600" />
@@ -465,7 +483,7 @@ function CertificateSettings({
                               setLogo(url);
                             } catch (error) {
                               console.error("Error uploading logo:", error);
-                              alert("Error al subir el logo");
+                              toast.error("Error al subir el logo");
                             } finally {
                               setUploading(false);
                             }
@@ -481,11 +499,7 @@ function CertificateSettings({
                       variant="ghost"
                       size="sm"
                       className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                      onClick={() => {
-                        if (confirm("¿Estás seguro de que deseas eliminar este logo?")) {
-                          setLogo(null);
-                        }
-                      }}
+                      onClick={() => setDeleteLogoConfirm(true)}
                       disabled={uploading}
                     >
                       <Trash2 className="w-4 h-4 mr-1" />
@@ -523,7 +537,7 @@ function CertificateSettings({
                           setLogo(url);
                         } catch (error) {
                           console.error("Error uploading logo:", error);
-                          alert("Error al subir el logo");
+                          toast.error("Error al subir el logo");
                         } finally {
                           setUploading(false);
                         }
@@ -549,7 +563,7 @@ function CertificateSettings({
                   onClick={() => {
                     if (logoInputUrl.trim()) {
                       setLogo(logoInputUrl.trim());
-                      alert("URL de logo aplicada. Recuerda hacer clic en 'Guardar Configuración'.");
+                      toast.success("URL de logo aplicada. Recuerda hacer clic en 'Guardar Configuración'.");
                     }
                   }}
                   disabled={uploading || !logoInputUrl.trim() || logoInputUrl.trim() === logo}
@@ -581,12 +595,7 @@ function CertificateSettings({
                       variant="ghost"
                       size="sm"
                       className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                      onClick={() => {
-                        if (confirm("¿Estás seguro de que deseas eliminar este logo?")) {
-                          setLogo(null);
-                          setLogoInputUrl("");
-                        }
-                      }}
+                      onClick={() => setDeleteLogoConfirm(true)}
                       disabled={uploading}
                     >
                       <Trash2 className="w-4 h-4 mr-1" />
@@ -690,6 +699,9 @@ export default function UnifiedCourseEditor({
   const [publishDialog, setPublishDialog] = useState(false);
   const [unpublishDialog, setUnpublishDialog] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+
+  // Thumbnail delete confirmation
+  const [deleteThumbnailConfirm, setDeleteThumbnailConfirm] = useState(false);
 
   const categories = [
     "Programación",
@@ -1175,22 +1187,46 @@ export default function UnifiedCourseEditor({
     }
   };
 
-  const calculateProgress = () => {
-    if (!course) return { completed: 0, total: 7 };
+  const calculateSectionProgress = () => {
+    if (!course) return {
+      basica: { completed: 0, total: 5 },
+      media: { completed: 0, total: 3 },
+      estructura: { completed: 0, total: 1 },
+    };
 
-    let completed = 0;
-    const total = 7;
+    // Información Básica (5 fields)
+    let basicaCompleted = 0;
+    if (course.title) basicaCompleted++;
+    if (course.description) basicaCompleted++;
+    if (course.organization) basicaCompleted++;
+    if (course.instructor_name) basicaCompleted++;
+    if (course.learning_outcomes && course.learning_outcomes.length > 0) basicaCompleted++;
 
-    if (course.title) completed++;
-    if (course.description) completed++;
-    if (course.instructor_name) completed++;
-    if (sections.length > 0) completed++;
-    if (course.learning_outcomes && course.learning_outcomes.length > 0)
-      completed++;
-    if (course.certificate_type && course.certificate_logo_url) completed++;
-    if (course.thumbnail_url) completed++;
+    // Media y Detalles (3 fields)
+    let mediaCompleted = 0;
+    if (course.price !== null && course.price !== undefined) mediaCompleted++;
+    if (course.thumbnail_url) mediaCompleted++;
+    if (course.certificate_type && course.certificate_logo_url) mediaCompleted++;
 
-    return { completed, total };
+    // Estructura del Curso (1 field)
+    let estructuraCompleted = 0;
+    const hasStructure = sections.some(s => s.lessons && s.lessons.length > 0);
+    if (hasStructure) estructuraCompleted++;
+
+    return {
+      basica: { completed: basicaCompleted, total: 5 },
+      media: { completed: mediaCompleted, total: 3 },
+      estructura: { completed: estructuraCompleted, total: 1 },
+    };
+  };
+
+  const isAllSectionsComplete = () => {
+    const p = calculateSectionProgress();
+    return (
+      p.basica.completed === p.basica.total &&
+      p.media.completed === p.media.total &&
+      p.estructura.completed === p.estructura.total
+    );
   };
 
   // ===== CREATION MODE (No courseId) =====
@@ -1684,7 +1720,8 @@ export default function UnifiedCourseEditor({
     return <div>Curso no encontrado</div>;
   }
 
-  const progress = calculateProgress();
+  const sectionProgress = calculateSectionProgress();
+  const allComplete = isAllSectionsComplete();
   const displayOrganization = course.organization || "Independiente";
 
   return (
@@ -1695,6 +1732,33 @@ export default function UnifiedCourseEditor({
         onConfirm={confirmDelete}
         title="¿Eliminar capítulo?"
         itemName={deleteDialog.chapterName}
+      />
+
+      <DeleteConfirmDialog
+        isOpen={deleteThumbnailConfirm}
+        onClose={() => setDeleteThumbnailConfirm(false)}
+        onConfirm={async () => {
+          setDeleteThumbnailConfirm(false);
+          setSaving(true);
+          try {
+            await supabase
+              .from("courses")
+              .update({ thumbnail_url: null })
+              .eq("id", courseId);
+            setCourse((prev) =>
+              prev ? { ...prev, thumbnail_url: null } : null
+            );
+            toast.success("Imagen eliminada");
+            router.refresh();
+          } catch (error) {
+            console.error("Error deleting thumbnail:", error);
+            toast.error("Error al eliminar la imagen");
+          } finally {
+            setSaving(false);
+          }
+        }}
+        title="¿Eliminar imagen de portada?"
+        itemName="Imagen de portada del curso"
       />
 
       {/* Submit for Approval Dialog */}
@@ -1793,29 +1857,47 @@ export default function UnifiedCourseEditor({
         </DialogContent>
       </Dialog>
 
-      {/* Progress Bar */}
+      {/* Section Progress Bars */}
       <div className="border-b border-border bg-background">
-        <div className="max-w-6xl mx-auto px-6 py-3 flex items-center gap-4">
-          <span className="text-sm text-muted-foreground">
-            Completa todos los campos ({progress.completed}/{progress.total})
-          </span>
-          <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-            <div
-              className="h-full bg-sky-500 rounded-full transition-all"
-              style={{
-                width: `${(progress.completed / progress.total) * 100}%`,
-              }}
-            />
+        <div className="max-w-6xl mx-auto px-6 py-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {[
+              { label: "Información Básica", ...sectionProgress.basica },
+              { label: "Media y Detalles", ...sectionProgress.media },
+              { label: "Estructura del Curso", ...sectionProgress.estructura },
+            ].map((section) => {
+              const pct = section.total > 0 ? (section.completed / section.total) * 100 : 0;
+              const barColor = pct === 0 ? "bg-red-400" : pct === 100 ? "bg-emerald-500" : "bg-amber-400";
+              const textColor = pct === 100 ? "text-emerald-600" : pct === 0 ? "text-red-500" : "text-amber-600";
+              return (
+                <div key={section.label} className="space-y-1.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-medium text-foreground">{section.label}</span>
+                    <span className={`font-bold tabular-nums ${textColor}`}>
+                      {section.completed}/{section.total}
+                    </span>
+                  </div>
+                  <div className="h-2 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all duration-500 ${barColor}`}
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
           </div>
-          <a
-            href={isAdmin ? `/admin/courses/${courseId}/preview` : `/teacher/courses/${courseId}/preview`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors shadow-sm"
-          >
-            <Eye className="w-4 h-4" />
-            Vista Previa
-          </a>
+          <div className="flex justify-end mt-3">
+            <a
+              href={isAdmin ? `/admin/courses/${courseId}/preview` : `/teacher/courses/${courseId}/preview`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors shadow-sm"
+            >
+              <Eye className="w-4 h-4" />
+              Vista Previa
+            </a>
+          </div>
         </div>
       </div>
 
@@ -1853,7 +1935,7 @@ export default function UnifiedCourseEditor({
                   ? setUnpublishDialog(true)
                   : setPublishDialog(true)
               }
-              disabled={saving}
+              disabled={saving || (!course.is_published && !allComplete)}
               variant={course.is_published ? "outline" : "default"}
             >
               {course.is_published ? "Despublicar" : "Publicar"}
@@ -1883,7 +1965,7 @@ export default function UnifiedCourseEditor({
                 <Button
                   size="sm"
                   onClick={() => setSubmitForApprovalDialog(true)}
-                  disabled={saving || progress.completed < progress.total}
+                  disabled={saving || !allComplete}
                   className="bg-blue-600 hover:bg-blue-700"
                 >
                   <Send className="w-4 h-4 mr-2" />
@@ -2349,24 +2431,7 @@ export default function UnifiedCourseEditor({
                         variant="ghost"
                         size="sm"
                         className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        onClick={async () => {
-                           if (!confirm("¿Seguro que deseas eliminar la imagen?")) return;
-                           setSaving(true);
-                           try {
-                              await supabase
-                                .from("courses")
-                                .update({ thumbnail_url: null })
-                                .eq("id", courseId);
-                              setCourse((prev) =>
-                                prev ? { ...prev, thumbnail_url: null } : null
-                              );
-                              router.refresh();
-                           } catch (error) {
-                              console.error("Error deleting thumbnail:", error);
-                           } finally {
-                              setSaving(false);
-                           }
-                        }}
+                        onClick={() => setDeleteThumbnailConfirm(true)}
                         disabled={saving}
                       >
                         <Trash2 className="w-3.5 h-3.5 mr-1" />
@@ -2432,6 +2497,9 @@ export default function UnifiedCourseEditor({
                   </div>
                 </div>
               )}
+              <p className="text-xs text-muted-foreground mt-3">
+                Tamaño recomendado: 1280 × 720 px (16:9) · Máximo 5MB · Formatos: JPG, PNG, WEBP
+              </p>
             </div>
 
             {/* Certificate Section */}
