@@ -112,6 +112,22 @@ export default function ModularLessonEditor({
   
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  // Toast notification state
+  const [toast, setToast] = useState<{
+    show: boolean;
+    message: string;
+    type: "success" | "error";
+  }>({ show: false, message: "", type: "success" });
+  const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const showToast = useCallback((message: string, type: "success" | "error" = "success") => {
+    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+    setToast({ show: true, message, type });
+    toastTimeoutRef.current = setTimeout(() => {
+      setToast((prev) => ({ ...prev, show: false }));
+    }, 3500);
+  }, []);
   const [sectionTitle, setSectionTitle] = useState("");
   
   // Lesson basic info
@@ -249,7 +265,7 @@ export default function ModularLessonEditor({
       }
     } catch (error) {
       console.error("Error loading lesson:", error);
-      alert("Error al cargar la lección");
+      showToast("Error al cargar la lección", "error");
     } finally {
       setLoading(false);
     }
@@ -354,7 +370,7 @@ export default function ModularLessonEditor({
 
   const handleSave = async () => {
     if (!lessonTitle.trim()) {
-      alert("Por favor ingresa un título para la lección");
+      showToast("Por favor ingresa un título para la lección", "error");
       return;
     }
 
@@ -462,12 +478,14 @@ export default function ModularLessonEditor({
         }
       }
 
-      alert("¡Lección guardada exitosamente!");
+      showToast("¡Lección guardada exitosamente!", "success");
       const basePath = isAdmin ? "/admin" : "/teacher";
-      router.push(`${basePath}/courses/${courseId}`);
+      setTimeout(() => {
+        router.push(`${basePath}/courses/${courseId}`);
+      }, 1200);
     } catch (error) {
       console.error("Error saving lesson:", error);
-      alert("Error al guardar la lección");
+      showToast("Error al guardar la lección", "error");
     } finally {
       setSaving(false);
     }
@@ -485,12 +503,14 @@ export default function ModularLessonEditor({
 
       if (error) throw error;
 
-      alert("Lección eliminada exitosamente");
+      showToast("Lección eliminada exitosamente", "success");
       const basePath = isAdmin ? "/admin" : "/teacher";
-      router.push(`${basePath}/courses/${courseId}`);
+      setTimeout(() => {
+        router.push(`${basePath}/courses/${courseId}`);
+      }, 1200);
     } catch (error) {
       console.error("Error deleting lesson:", error);
-      alert("Error al eliminar la lección");
+      showToast("Error al eliminar la lección", "error");
     }
   };
 
@@ -792,6 +812,69 @@ export default function ModularLessonEditor({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Animated Toast Notification */}
+      <div
+        className={`fixed top-6 right-6 z-[9999] transition-all duration-500 ease-out ${
+          toast.show
+            ? "translate-y-0 opacity-100 scale-100"
+            : "-translate-y-4 opacity-0 scale-95 pointer-events-none"
+        }`}
+      >
+        <div
+          className={`relative flex items-center gap-3 px-5 py-4 rounded-xl shadow-2xl backdrop-blur-sm border min-w-[320px] ${
+            toast.type === "success"
+              ? "bg-gradient-to-r from-emerald-500/90 to-green-500/90 border-emerald-400/30 text-white"
+              : "bg-gradient-to-r from-red-500/90 to-rose-500/90 border-red-400/30 text-white"
+          }`}
+          style={{
+            boxShadow:
+              toast.type === "success"
+                ? "0 20px 60px -12px rgba(16, 185, 129, 0.4)"
+                : "0 20px 60px -12px rgba(239, 68, 68, 0.4)",
+          }}
+        >
+          <div className="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center bg-white/20">
+            {toast.type === "success" ? (
+              <CheckCircle className="w-5 h-5 text-white" />
+            ) : (
+              <AlertCircle className="w-5 h-5 text-white" />
+            )}
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-semibold leading-tight">{toast.message}</p>
+          </div>
+          <button
+            onClick={() => setToast((prev) => ({ ...prev, show: false }))}
+            className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors"
+          >
+            <X className="w-3.5 h-3.5 text-white/80" />
+          </button>
+          {/* Progress bar */}
+          {toast.show && (
+            <div className="absolute bottom-0 left-0 right-0 h-1 rounded-b-xl overflow-hidden">
+              <div
+                className="h-full bg-white/30 rounded-b-xl"
+                style={{
+                  animation: "toast-progress 3.5s linear forwards",
+                }}
+              />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Toast progress bar animation */}
+      <style jsx>{`
+        @keyframes toast-progress {
+          from {
+            width: 100%;
+          }
+          to {
+            width: 0%;
+          }
+        }
+      `}</style>
     </div>
   );
 }
