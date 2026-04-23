@@ -971,7 +971,6 @@ function VideoModuleEditor({
     } catch (error) {
       console.error("Error uploading to Mux:", error);
       setUploadStatus("error");
-      showToast("Error al subir el video. Por favor intenta de nuevo.", "error");
     } finally {
       setUploading(false);
     }
@@ -1072,6 +1071,17 @@ function VideoModuleEditor({
                       className="bg-purple-600 h-2 rounded-full transition-all duration-300"
                       style={{ width: `${uploadProgress}%` }}
                     />
+                  </div>
+                </div>
+              )}
+
+              {uploadStatus === "error" && (
+                <div className="mt-3 bg-red-50 border border-red-200 rounded-lg p-3">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 text-red-600" />
+                    <p className="text-sm text-red-800">
+                      Error al subir el video. Por favor intenta de nuevo.
+                    </p>
                   </div>
                 </div>
               )}
