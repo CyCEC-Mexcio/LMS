@@ -9,12 +9,14 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Loader2, Save, User, BookOpen, CheckCircle } from "lucide-react";
+import ProfileAvatarUpload from "@/components/profile-avatar-upload";
 
 export default function TeacherSettingsPage() {
   const supabase = createClient();
   const [loading, setLoading]  = useState(true);
   const [saving, setSaving]    = useState(false);
   const [message, setMessage]  = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [userId, setUserId]    = useState("");
   const [profile, setProfile]  = useState({
     full_name:      "",
     bio:            "",
@@ -33,6 +35,8 @@ export default function TeacherSettingsPage() {
     const load = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+
+      setUserId(user.id);
 
       const { data } = await supabase
         .from("profiles")
@@ -119,37 +123,15 @@ export default function TeacherSettingsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
-          {/* Avatar preview */}
-          <div className="flex items-center gap-4">
-            <div className="w-24 h-24 rounded-full overflow-hidden bg-gray-100 border-2 border-gray-200 flex-shrink-0">
-              {profile.avatar_url ? (
-                <img
-                  src={profile.avatar_url}
-                  alt="Avatar"
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = "none";
-                  }}
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-3xl font-bold text-gray-400">
-                  {profile.full_name?.[0]?.toUpperCase() || "?"}
-                </div>
-              )}
-            </div>
-            <div className="flex-1">
-              <Label htmlFor="avatar_url">URL de foto de perfil</Label>
-              <Input
-                id="avatar_url"
-                value={profile.avatar_url}
-                onChange={(e) => setProfile((p) => ({ ...p, avatar_url: e.target.value }))}
-                placeholder="https://ejemplo.com/tu-foto.jpg"
-                className="mt-1"
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Recomendado: foto profesional cuadrada. Tu foto de Google se usa si dejas esto vacío.
-              </p>
-            </div>
+          {/* Avatar upload */}
+          <div>
+            <Label className="mb-2 block">Foto de perfil</Label>
+            <ProfileAvatarUpload
+              userId={userId}
+              currentUrl={profile.avatar_url}
+              fullName={profile.full_name}
+              onUrlChange={(url) => setProfile((p) => ({ ...p, avatar_url: url }))}
+            />
           </div>
 
           {/* Full name */}
@@ -219,7 +201,7 @@ export default function TeacherSettingsPage() {
           <div className="flex items-center gap-4 p-4 bg-white rounded-lg border border-blue-100">
             <div className="w-14 h-14 rounded-full overflow-hidden bg-gray-100 border flex-shrink-0">
               {profile.avatar_url ? (
-                <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
+                <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-xl font-bold text-gray-400">
                   {profile.full_name?.[0]?.toUpperCase() || "?"}

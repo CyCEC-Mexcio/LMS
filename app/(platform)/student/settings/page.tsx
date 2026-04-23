@@ -7,14 +7,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Save, User } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Loader2, Save, User, CheckCircle, Info } from "lucide-react";
+import ProfileAvatarUpload from "@/components/profile-avatar-upload";
 
 export default function StudentSettingsPage() {
   const supabase = createClient();
   const [loading, setLoading]   = useState(true);
   const [saving, setSaving]     = useState(false);
   const [message, setMessage]   = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [userId, setUserId]     = useState("");
+  const [isGoogleUser, setIsGoogleUser] = useState(false);
+  const [googleAvatarUrl, setGoogleAvatarUrl] = useState("");
+  const [hasCustomAvatar, setHasCustomAvatar] = useState(false);
   const [profile, setProfile]   = useState({
     full_name: "",
     bio: "",
@@ -26,6 +31,14 @@ export default function StudentSettingsPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      setUserId(user.id);
+
+      // Detect Google login
+      const googleAvatar = user.user_metadata?.avatar_url || "";
+      const provider = user.app_metadata?.provider;
+      setIsGoogleUser(provider === "google");
+      setGoogleAvatarUrl(googleAvatar);
+
       const { data } = await supabase
         .from("profiles")
         .select("full_name, bio, avatar_url")
@@ -33,11 +46,15 @@ export default function StudentSettingsPage() {
         .single();
 
       if (data) {
+        // Check if user has a custom avatar (different from Google one)
+        const customAvatar = data.avatar_url && data.avatar_url !== googleAvatar;
+        setHasCustomAvatar(!!customAvatar);
+
         setProfile({
           full_name:  data.full_name  || "",
           bio:        data.bio        || "",
-          // Fall back to Google avatar if no custom one set
-          avatar_url: data.avatar_url || user.user_metadata?.avatar_url || "",
+          // Show custom avatar if set, otherwise Google avatar
+          avatar_url: data.avatar_url || googleAvatar || "",
         });
       }
       setLoading(false);
@@ -71,6 +88,13 @@ export default function StudentSettingsPage() {
     }
   };
 
+  const handleResetToGoogle = () => {
+    if (googleAvatarUrl) {
+      setProfile((p) => ({ ...p, avatar_url: googleAvatarUrl }));
+      setHasCustomAvatar(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-16">
@@ -92,36 +116,37 @@ export default function StudentSettingsPage() {
             <User className="w-5 h-5" />
             Información Personal
           </CardTitle>
+          {isGoogleUser && (
+            <CardDescription className="flex items-center gap-1.5">
+              <Info className="w-3.5 h-3.5" />
+              Iniciaste sesión con Google. Tu foto de Google se usa por defecto.
+            </CardDescription>
+          )}
         </CardHeader>
         <CardContent className="space-y-5">
-          {/* Avatar preview */}
-          <div className="flex items-center gap-4">
-            <div className="w-20 h-20 rounded-full overflow-hidden bg-gray-100 border-2 border-gray-200 flex-shrink-0">
-              {profile.avatar_url ? (
-                <img
-                  src={profile.avatar_url}
-                  alt="Avatar"
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-2xl font-bold text-gray-400">
-                  {profile.full_name?.[0]?.toUpperCase() || "?"}
-                </div>
-              )}
-            </div>
-            <div className="flex-1">
-              <Label htmlFor="avatar_url">URL de foto de perfil</Label>
-              <Input
-                id="avatar_url"
-                value={profile.avatar_url}
-                onChange={(e) => setProfile((p) => ({ ...p, avatar_url: e.target.value }))}
-                placeholder="https://ejemplo.com/tu-foto.jpg"
-                className="mt-1"
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Pega la URL de una imagen. Tu foto de Google se usa si no ingresas una.
-              </p>
-            </div>
+          {/* Avatar */}
+          <div>
+            <Label className="mb-2 block">Foto de perfil</Label>
+            <ProfileAvatarUpload
+              userId={userId}
+              currentUrl={profile.avatar_url}
+              fullName={profile.full_name}
+              onUrlChange={(url) => {
+                setProfile((p) => ({ ...p, avatar_url: url }));
+                setHasCustomAvatar(!!url && url !== googleAvatarUrl);
+              }}
+            />
+
+            {/* Reset to Google avatar button */}
+            {isGoogleUser && hasCustomAvatar && googleAvatarUrl && (
+              <button
+                type="button"
+                onClick={handleResetToGoogle}
+                className="mt-2 text-xs text-blue-600 hover:text-blue-700 hover:underline transition-colors"
+              >
+                ← Volver a usar mi foto de Google
+              </button>
+            )}
           </div>
 
           {/* Full name */}
@@ -152,12 +177,13 @@ export default function StudentSettingsPage() {
           {/* Feedback */}
           {message && (
             <div
-              className={`text-sm px-4 py-2 rounded-lg ${
+              className={`flex items-start gap-2 text-sm px-4 py-3 rounded-lg ${
                 message.type === "success"
                   ? "bg-green-50 text-green-700 border border-green-200"
                   : "bg-red-50 text-red-700 border border-red-200"
               }`}
             >
+              {message.type === "success" && <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />}
               {message.text}
             </div>
           )}

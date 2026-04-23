@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,11 @@ import {
   Upload,
   CheckCircle,
   AlertCircle,
+  Code,
+  Eye,
+  Heading1,
+  Heading2,
+  List,
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
@@ -57,11 +62,13 @@ interface BaseModule {
 
 interface VideoModule extends BaseModule {
   type: "video";
-  provider: "youtube" | "mux" | "embed" | null;
+  provider: "youtube" | "mux" | "embed" | "google_drive" | "onedrive" | null;
   youtube_url: string;
   mux_playback_id: string;
   mux_asset_id: string;
   embed_code: string;
+  google_drive_url: string;
+  onedrive_url: string;
 }
 
 interface ContentModule extends BaseModule {
@@ -174,6 +181,8 @@ export default function ModularLessonEditor({
               mux_playback_id: lesson.mux_playback_id || "",
               mux_asset_id: "",
               embed_code: lesson.embed_code || "",
+              google_drive_url: lesson.video_provider === "google_drive" ? (lesson.video_url || "") : "",
+              onedrive_url: lesson.video_provider === "onedrive" ? (lesson.video_url || "") : "",
             });
           }
 
@@ -259,6 +268,8 @@ export default function ModularLessonEditor({
       (newModule as VideoModule).mux_playback_id = "";
       (newModule as VideoModule).mux_asset_id = "";
       (newModule as VideoModule).embed_code = "";
+      (newModule as VideoModule).google_drive_url = "";
+      (newModule as VideoModule).onedrive_url = "";
     } else if (type === "content") {
       (newModule as ContentModule).content = "";
     } else if (type === "quiz") {
@@ -364,6 +375,7 @@ export default function ModularLessonEditor({
         youtube_url: videoModule?.youtube_url || null,
         mux_playback_id: videoModule?.mux_playback_id || null,
         embed_code: videoModule?.embed_code || null,
+        video_url: videoModule?.google_drive_url || videoModule?.onedrive_url || null,
         content: contentModule?.content || null,
         has_quiz: !!quizModule,
         resources: linkModules.map((link) => ({
@@ -894,6 +906,8 @@ function VideoModuleEditor({
             <SelectItem value="none">Sin Video</SelectItem>
             <SelectItem value="youtube">YouTube</SelectItem>
             <SelectItem value="mux">Mux (Subir Video)</SelectItem>
+            <SelectItem value="google_drive">Google Drive</SelectItem>
+            <SelectItem value="onedrive">OneDrive / Outlook</SelectItem>
             <SelectItem value="embed">Código Embebido</SelectItem>
           </SelectContent>
         </Select>
@@ -996,6 +1010,144 @@ function VideoModuleEditor({
         </div>
       )}
 
+      {module.provider === "google_drive" && (
+        <div className="space-y-3">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="flex items-start gap-2">
+              <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
+              <div className="text-sm text-blue-800">
+                <p className="font-medium mb-1">Cómo compartir un video de Google Drive:</p>
+                <ol className="list-decimal list-inside space-y-1 text-blue-700">
+                  <li>Abre el video en Google Drive</li>
+                  <li>Haz clic en <strong>Compartir</strong> y cambia el acceso a <strong>&quot;Cualquier persona con el enlace&quot;</strong></li>
+                  <li>Copia el enlace y pégalo aquí</li>
+                </ol>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <Label>Enlace de Google Drive</Label>
+            <Input
+              value={module.google_drive_url}
+              onChange={(e) => onChange({ google_drive_url: e.target.value })}
+              placeholder="https://drive.google.com/file/d/.../view?usp=sharing"
+              className="mt-1"
+            />
+          </div>
+
+          {module.google_drive_url && (() => {
+            const match = module.google_drive_url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+            const fileId = match?.[1];
+            if (fileId) {
+              return (
+                <div className="mt-3">
+                  <Label className="text-sm text-gray-600 mb-2 block">Vista Previa</Label>
+                  <div className="w-full aspect-video bg-black rounded-lg overflow-hidden border border-gray-300">
+                    <iframe
+                      src={`https://drive.google.com/file/d/${fileId}/preview`}
+                      className="w-full h-full"
+                      allow="autoplay; encrypted-media"
+                      allowFullScreen
+                    />
+                  </div>
+                </div>
+              );
+            }
+            return (
+              <p className="text-sm text-red-600 mt-1">
+                No se pudo extraer el ID del archivo. Asegúrate de que el enlace sea válido.
+              </p>
+            );
+          })()}
+        </div>
+      )}
+
+      {module.provider === "onedrive" && (
+        <div className="space-y-3">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="flex items-start gap-2">
+              <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
+              <div className="text-sm text-blue-800">
+                <p className="font-medium mb-1">Cómo compartir un video de OneDrive:</p>
+                <ol className="list-decimal list-inside space-y-1 text-blue-700">
+                  <li>Abre el video en OneDrive</li>
+                  <li>Haz clic en <strong>Compartir</strong> → <strong>Cualquier persona con el vínculo</strong></li>
+                  <li>Copia el enlace y pégalo aquí</li>
+                </ol>
+                <p className="mt-2 text-blue-600 text-xs">
+                  También puedes usar: Clic derecho → <strong>Insertar</strong> → copiar la URL del iframe
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <Label>Enlace de OneDrive</Label>
+            <Input
+              value={module.onedrive_url}
+              onChange={(e) => onChange({ onedrive_url: e.target.value })}
+              placeholder="https://onedrive.live.com/... o https://1drv.ms/v/..."
+              className="mt-1"
+            />
+          </div>
+
+          {module.onedrive_url && (() => {
+            const url = module.onedrive_url.trim();
+            // Already an embed URL
+            if (url.includes("/embed")) {
+              return (
+                <div className="mt-3">
+                  <Label className="text-sm text-gray-600 mb-2 block">Vista Previa</Label>
+                  <div className="w-full aspect-video bg-black rounded-lg overflow-hidden border border-gray-300">
+                    <iframe
+                      src={url}
+                      className="w-full h-full"
+                      allow="autoplay; encrypted-media"
+                      allowFullScreen
+                    />
+                  </div>
+                </div>
+              );
+            }
+            // Convert share link to embed: replace /redir to /embed or add embed param
+            const embedUrl = url
+              .replace("redir?", "embed?")
+              .replace("/view.aspx?", "/embed?");
+            // Try to use it as embed
+            if (url.includes("onedrive.live.com") || url.includes("sharepoint.com")) {
+              return (
+                <div className="mt-3">
+                  <Label className="text-sm text-gray-600 mb-2 block">Vista Previa</Label>
+                  <div className="w-full aspect-video bg-black rounded-lg overflow-hidden border border-gray-300">
+                    <iframe
+                      src={embedUrl}
+                      className="w-full h-full"
+                      allow="autoplay; encrypted-media"
+                      allowFullScreen
+                    />
+                  </div>
+                  <p className="text-xs text-amber-600 mt-2">
+                    Si no se muestra la vista previa, usa la opción <strong>Insertar → Generar código</strong> en OneDrive y pega la URL del iframe.
+                  </p>
+                </div>
+              );
+            }
+            // 1drv.ms short links or unknown format
+            return (
+              <div className="mt-3">
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                  <p className="text-sm text-amber-800">
+                    <strong>Nota:</strong> Los enlaces cortos (1drv.ms) pueden no funcionar directamente.
+                    Para mejor resultado, usa el enlace completo de OneDrive o la URL de inserción.
+                  </p>
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+      )}
+
       {module.provider === "embed" && (
         <div>
           <Label>Código Embebido</Label>
@@ -1022,98 +1174,281 @@ function ContentModuleEditor({
   const [showLinkDialog, setShowLinkDialog] = useState(false);
   const [linkText, setLinkText] = useState("");
   const [linkUrl, setLinkUrl] = useState("");
-  const textareaRef = useState<HTMLTextAreaElement | null>(null);
+  const [editorMode, setEditorMode] = useState<"text" | "html" | "preview">("text");
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const selectionRef = useRef<{ start: number; end: number }>({ start: 0, end: 0 });
 
-  const insertFormatting = (before: string, after: string) => {
-    const textarea = document.getElementById("content-textarea") as HTMLTextAreaElement;
+  // Save selection whenever user interacts with textarea
+  const saveSelection = useCallback(() => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      selectionRef.current = {
+        start: textarea.selectionStart,
+        end: textarea.selectionEnd,
+      };
+    }
+  }, []);
+
+  const insertFormatting = useCallback((before: string, after: string) => {
+    const textarea = textareaRef.current;
     if (!textarea) return;
 
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const selectedText = module.content.substring(start, end);
-    const newText = 
-      module.content.substring(0, start) +
+    const { start, end } = selectionRef.current;
+    const content = module.content;
+    const selectedText = content.substring(start, end);
+    const placeholder = selectedText || "texto";
+    const newText =
+      content.substring(0, start) +
       before +
-      selectedText +
+      placeholder +
       after +
-      module.content.substring(end);
+      content.substring(end);
 
     onChange({ content: newText });
 
-    // Reset cursor position
+    // Position cursor inside the formatting marks
     setTimeout(() => {
       textarea.focus();
-      textarea.setSelectionRange(start + before.length, end + before.length);
+      if (selectedText) {
+        // Keep the formatted text selected
+        textarea.setSelectionRange(start + before.length, start + before.length + selectedText.length);
+      } else {
+        // Select the placeholder so user can type over it
+        textarea.setSelectionRange(start + before.length, start + before.length + placeholder.length);
+      }
     }, 0);
-  };
+  }, [module.content, onChange]);
 
-  const insertLink = () => {
-    if (!linkText || !linkUrl) return;
-
-    const textarea = document.getElementById("content-textarea") as HTMLTextAreaElement;
+  const insertAtCursor = useCallback((text: string) => {
+    const textarea = textareaRef.current;
     if (!textarea) return;
 
-    const start = textarea.selectionStart;
-    const linkMarkdown = `[${linkText}](${linkUrl})`;
+    const { start, end } = selectionRef.current;
+    const content = module.content;
     const newText =
-      module.content.substring(0, start) +
-      linkMarkdown +
-      module.content.substring(start);
+      content.substring(0, start) +
+      text +
+      content.substring(end);
 
     onChange({ content: newText });
+
+    setTimeout(() => {
+      textarea.focus();
+      const newPos = start + text.length;
+      textarea.setSelectionRange(newPos, newPos);
+    }, 0);
+  }, [module.content, onChange]);
+
+  const handleInsertLink = () => {
+    if (!linkUrl) return;
+
+    const displayText = linkText || linkUrl;
+    const linkMarkdown = `[${displayText}](${linkUrl})`;
+    insertAtCursor(linkMarkdown);
+
     setShowLinkDialog(false);
     setLinkText("");
     setLinkUrl("");
   };
 
+  const openLinkDialog = useCallback(() => {
+    // Pre-fill link text with selected text
+    const textarea = textareaRef.current;
+    if (textarea) {
+      const { start, end } = selectionRef.current;
+      const selected = module.content.substring(start, end);
+      if (selected) {
+        setLinkText(selected);
+      }
+    }
+    setShowLinkDialog(true);
+  }, [module.content]);
+
+  // Render preview HTML from content
+  const previewHtml = useCallback((content: string) => {
+    // If it looks like HTML, render directly
+    if (content.trim().startsWith("<")) {
+      return content;
+    }
+    // Otherwise convert markdown-like text to HTML
+    let html = content
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+    html = html.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+    html = html.replace(/\*(.+?)\*/g, "<em>$1</em>");
+    html = html.replace(
+      /\[(.+?)\]\((.+?)\)/g,
+      '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">$1</a>'
+    );
+    html = html.replace(/^## (.+)$/gm, '<h3 class="text-lg font-semibold mt-4 mb-2">$1</h3>');
+    html = html.replace(/^# (.+)$/gm, '<h2 class="text-xl font-bold mt-4 mb-2">$1</h2>');
+    html = html.replace(/\n/g, "<br />");
+    return html;
+  }, []);
+
+  // Toolbar button helper — uses onMouseDown + preventDefault to keep textarea selection
+  const ToolbarBtn = ({ onClick, title, children, active }: { onClick: () => void; title: string; children: React.ReactNode; active?: boolean }) => (
+    <button
+      type="button"
+      onMouseDown={(e) => {
+        e.preventDefault(); // Prevent textarea from losing focus/selection
+        onClick();
+      }}
+      title={title}
+      className={`h-8 w-8 flex items-center justify-center rounded-md transition-colors hover:bg-gray-200 ${
+        active ? "bg-purple-100 text-purple-700 ring-1 ring-purple-300" : "text-gray-700"
+      }`}
+    >
+      {children}
+    </button>
+  );
+
   return (
     <div>
-      <div className="flex items-center gap-2 mb-2">
-        <Label>Contenido</Label>
-        <div className="flex gap-1 ml-auto">
-          <Button
+      {/* Toolbar */}
+      <div className="flex items-center justify-between mb-2">
+        <Label className="text-sm font-medium">Contenido</Label>
+        
+        {/* Mode Tabs */}
+        <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5">
+          <button
             type="button"
-            size="sm"
-            variant="ghost"
-            onClick={() => insertFormatting("**", "**")}
-            title="Negrita"
-            className="h-8 w-8 p-0"
+            onClick={() => setEditorMode("text")}
+            className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+              editorMode === "text"
+                ? "bg-white text-gray-900 shadow-sm"
+                : "text-gray-600 hover:text-gray-900"
+            }`}
           >
-            <Bold className="w-4 h-4" />
-          </Button>
-          <Button
+            Texto
+          </button>
+          <button
             type="button"
-            size="sm"
-            variant="ghost"
-            onClick={() => insertFormatting("*", "*")}
-            title="Cursiva"
-            className="h-8 w-8 p-0"
+            onClick={() => setEditorMode("html")}
+            className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+              editorMode === "html"
+                ? "bg-white text-gray-900 shadow-sm"
+                : "text-gray-600 hover:text-gray-900"
+            }`}
           >
-            <Italic className="w-4 h-4" />
-          </Button>
-          <Button
+            HTML
+          </button>
+          <button
             type="button"
-            size="sm"
-            variant="ghost"
-            onClick={() => setShowLinkDialog(true)}
-            title="Insertar enlace"
-            className="h-8 w-8 p-0"
+            onClick={() => setEditorMode("preview")}
+            className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+              editorMode === "preview"
+                ? "bg-white text-gray-900 shadow-sm"
+                : "text-gray-600 hover:text-gray-900"
+            }`}
           >
-            <Link2 className="w-4 h-4" />
-          </Button>
+            <Eye className="w-3 h-3 inline mr-1" />
+            Vista Previa
+          </button>
         </div>
       </div>
 
-      <Textarea
-        id="content-textarea"
-        value={module.content}
-        onChange={(e) => onChange({ content: e.target.value })}
-        placeholder="Escribe el contenido de la lección aquí..."
-        className="mt-1 min-h-[200px]"
-      />
-      <p className="text-xs text-gray-500 mt-2">
-        Soporta formato Markdown: **negrita**, *cursiva*, [enlace](url)
-      </p>
+      {/* Text Editor Mode */}
+      {editorMode === "text" && (
+        <div>
+          {/* Formatting Toolbar */}
+          <div className="flex items-center gap-0.5 p-1.5 bg-gray-50 border border-b-0 border-gray-200 rounded-t-lg">
+            <ToolbarBtn onClick={() => insertFormatting("**", "**")} title="Negrita (Ctrl+B)">
+              <Bold className="w-4 h-4" />
+            </ToolbarBtn>
+            <ToolbarBtn onClick={() => insertFormatting("*", "*")} title="Cursiva (Ctrl+I)">
+              <Italic className="w-4 h-4" />
+            </ToolbarBtn>
+            <div className="w-px h-5 bg-gray-300 mx-1" />
+            <ToolbarBtn onClick={openLinkDialog} title="Insertar enlace">
+              <Link2 className="w-4 h-4" />
+            </ToolbarBtn>
+            <div className="w-px h-5 bg-gray-300 mx-1" />
+            <ToolbarBtn onClick={() => insertFormatting("# ", "")} title="Título">
+              <Heading1 className="w-4 h-4" />
+            </ToolbarBtn>
+            <ToolbarBtn onClick={() => insertFormatting("## ", "")} title="Subtítulo">
+              <Heading2 className="w-4 h-4" />
+            </ToolbarBtn>
+            <div className="w-px h-5 bg-gray-300 mx-1" />
+            <ToolbarBtn onClick={() => insertAtCursor("\n- ")} title="Lista">
+              <List className="w-4 h-4" />
+            </ToolbarBtn>
+          </div>
+
+          <textarea
+            ref={textareaRef}
+            value={module.content}
+            onChange={(e) => onChange({ content: e.target.value })}
+            onSelect={saveSelection}
+            onKeyUp={saveSelection}
+            onClick={saveSelection}
+            onKeyDown={(e) => {
+              // Keyboard shortcuts
+              if (e.ctrlKey || e.metaKey) {
+                if (e.key === "b") {
+                  e.preventDefault();
+                  saveSelection();
+                  insertFormatting("**", "**");
+                } else if (e.key === "i") {
+                  e.preventDefault();
+                  saveSelection();
+                  insertFormatting("*", "*");
+                } else if (e.key === "k") {
+                  e.preventDefault();
+                  saveSelection();
+                  openLinkDialog();
+                }
+              }
+            }}
+            placeholder="Escribe el contenido de la lección aquí..."
+            className="w-full min-h-[250px] p-3 border border-gray-200 rounded-b-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-y font-mono text-sm leading-relaxed"
+          />
+
+          <div className="flex items-center justify-between mt-2">
+            <p className="text-xs text-gray-500">
+              <strong>Atajos:</strong> Ctrl+B negrita • Ctrl+I cursiva • Ctrl+K enlace
+            </p>
+            <p className="text-xs text-gray-400">
+              Markdown: **negrita** • *cursiva* • [texto](url) • # Título
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* HTML Editor Mode */}
+      {editorMode === "html" && (
+        <div>
+          <div className="flex items-center gap-2 p-2 bg-amber-50 border border-b-0 border-amber-200 rounded-t-lg">
+            <Code className="w-4 h-4 text-amber-600" />
+            <span className="text-xs text-amber-800 font-medium">Modo HTML — Escribe o pega código HTML directamente</span>
+          </div>
+          <textarea
+            value={module.content}
+            onChange={(e) => onChange({ content: e.target.value })}
+            placeholder='<h2>Mi título</h2>\n<p>Contenido con <strong>negrita</strong> y <em>cursiva</em></p>\n<a href="https://ejemplo.com">Enlace</a>'
+            className="w-full min-h-[250px] p-3 border border-amber-200 rounded-b-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent resize-y font-mono text-sm leading-relaxed bg-gray-900 text-green-400"
+          />
+          <p className="text-xs text-amber-700 mt-2">
+            Puedes usar etiquetas HTML como &lt;h2&gt;, &lt;p&gt;, &lt;strong&gt;, &lt;em&gt;, &lt;a&gt;, &lt;ul&gt;, &lt;li&gt;, &lt;iframe&gt;, etc.
+          </p>
+        </div>
+      )}
+
+      {/* Preview Mode */}
+      {editorMode === "preview" && (
+        <div className="border border-gray-200 rounded-lg p-6 min-h-[250px] bg-white">
+          {module.content ? (
+            <div
+              className="prose max-w-none"
+              dangerouslySetInnerHTML={{ __html: previewHtml(module.content) }}
+            />
+          ) : (
+            <p className="text-gray-400 text-center py-8">No hay contenido para previsualizar</p>
+          )}
+        </div>
+      )}
 
       {/* Link Dialog */}
       <AlertDialog open={showLinkDialog} onOpenChange={setShowLinkDialog}>
@@ -1129,6 +1464,7 @@ function ContentModuleEditor({
                 value={linkText}
                 onChange={(e) => setLinkText(e.target.value)}
                 placeholder="Haz clic aquí"
+                className="mt-1"
               />
             </div>
             <div>
@@ -1138,12 +1474,21 @@ function ContentModuleEditor({
                 value={linkUrl}
                 onChange={(e) => setLinkUrl(e.target.value)}
                 placeholder="https://ejemplo.com"
+                className="mt-1"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleInsertLink();
+                  }
+                }}
               />
             </div>
           </div>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={insertLink}>Insertar</AlertDialogAction>
+            <AlertDialogAction onClick={handleInsertLink} disabled={!linkUrl}>
+              Insertar
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

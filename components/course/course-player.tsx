@@ -618,24 +618,32 @@ export default function CoursePlayer({
               <h2 className="text-xl font-semibold mb-3">Contenido</h2>
               <div
                 className="prose max-w-none"
-                dangerouslySetInnerHTML={{ __html: currentLesson.content }}
+                dangerouslySetInnerHTML={{ __html: formatContent(currentLesson.content) }}
               />
             </Card>
           )}
 
-          {!showQuiz && currentLesson.resources && Object.keys(currentLesson.resources).length > 0 && (
+          {!showQuiz && currentLesson.resources && (Array.isArray(currentLesson.resources) ? currentLesson.resources.length > 0 : Object.keys(currentLesson.resources).length > 0) && (
             <Card className="p-6">
               <h2 className="text-xl font-semibold mb-3">Recursos</h2>
-              <div className="space-y-2">
-                {Object.entries(currentLesson.resources).map(([key, value]: [string, any]) => (
+              <div className="space-y-3">
+                {(Array.isArray(currentLesson.resources) ? currentLesson.resources : Object.values(currentLesson.resources)).map((resource: any, idx: number) => (
                   <a
-                    key={key}
-                    href={value.url}
+                    key={resource.id || idx}
+                    href={resource.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-blue-600 hover:underline"
+                    className="flex items-start gap-3 p-3 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-colors group"
                   >
-                    📎 {value.name || key}
+                    <span className="text-lg">📎</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-blue-600 group-hover:underline truncate">
+                        {resource.title || resource.name || resource.url}
+                      </p>
+                      {resource.description && (
+                        <p className="text-sm text-gray-500 mt-0.5">{resource.description}</p>
+                      )}
+                    </div>
                   </a>
                 ))}
               </div>
@@ -657,6 +665,44 @@ export default function CoursePlayer({
       </div>{/* close flex row */}
     </div>
   );
+}
+
+// Helper to convert plain text content (with basic markdown) to HTML
+function formatContent(text: string): string {
+  // If content looks like HTML (starts with a tag), pass through directly
+  if (text.trim().startsWith("<")) {
+    return text;
+  }
+
+  // Escape HTML entities first to prevent XSS
+  let html = text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+
+  // Convert markdown headings (must be before bold to avoid conflict)
+  html = html.replace(/^## (.+)$/gm, '<h3 class="text-lg font-semibold mt-4 mb-2">$1</h3>');
+  html = html.replace(/^# (.+)$/gm, '<h2 class="text-xl font-bold mt-4 mb-2">$1</h2>');
+
+  // Convert markdown bold **text** to <strong>
+  html = html.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+
+  // Convert markdown italic *text* to <em>
+  html = html.replace(/\*(.+?)\*/g, "<em>$1</em>");
+
+  // Convert markdown links [text](url) to <a>
+  html = html.replace(
+    /\[(.+?)\]\((.+?)\)/g,
+    '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">$1</a>'
+  );
+
+  // Convert markdown list items
+  html = html.replace(/^- (.+)$/gm, '<li class="ml-4">$1</li>');
+
+  // Convert newlines to <br> to preserve line breaks
+  html = html.replace(/\n/g, "<br />");
+
+  return html;
 }
 
 // Separate sidebar component to prevent re-renders

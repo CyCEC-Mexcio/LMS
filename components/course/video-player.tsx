@@ -192,6 +192,51 @@ export default function VideoPlayer({
       }
     }
 
+    // Google Drive Video
+    if (lesson.video_provider === "google_drive" && lesson.video_url) {
+      const driveMatch = lesson.video_url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+      const driveFileId = driveMatch?.[1];
+      if (driveFileId) {
+        return (
+          <div
+            key={lesson.id}
+            className="w-full aspect-video bg-black rounded-lg overflow-hidden"
+          >
+            <iframe
+              src={`https://drive.google.com/file/d/${driveFileId}/preview`}
+              className="w-full h-full"
+              allow="autoplay; encrypted-media"
+              allowFullScreen
+            />
+          </div>
+        );
+      }
+    }
+
+    // OneDrive Video
+    if (lesson.video_provider === "onedrive" && lesson.video_url) {
+      let embedSrc = lesson.video_url.trim();
+      // Convert share links to embed format
+      if (!embedSrc.includes("/embed")) {
+        embedSrc = embedSrc
+          .replace("redir?", "embed?")
+          .replace("/view.aspx?", "/embed?");
+      }
+      return (
+        <div
+          key={lesson.id}
+          className="w-full aspect-video bg-black rounded-lg overflow-hidden"
+        >
+          <iframe
+            src={embedSrc}
+            className="w-full h-full"
+            allow="autoplay; encrypted-media; fullscreen"
+            allowFullScreen
+          />
+        </div>
+      );
+    }
+
     // Mux Video
     if (lesson.video_provider === "mux" && lesson.mux_playback_id) {
       return (

@@ -8,8 +8,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
-  Loader2, Save, User, Settings, Bell, CreditCard, CheckCircle, Building2,
+  Loader2, Save, User, Bell, CreditCard, CheckCircle, Building2,
 } from "lucide-react";
+import ProfileAvatarUpload from "@/components/profile-avatar-upload";
 
 type MessageState = { type: "success" | "error"; text: string } | null;
 
@@ -30,6 +31,7 @@ function SectionMessage({ message }: { message: MessageState }) {
 export default function AdminSettingsPage() {
   const supabase = createClient();
   const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState("");
 
   // ── Profile ──────────────────────────────────────────────────────────────
   const [profile, setProfile] = useState({ full_name: "", bio: "", avatar_url: "" });
@@ -72,6 +74,8 @@ export default function AdminSettingsPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      setUserId(user.id);
+
       const { data } = await supabase
         .from("profiles")
         .select("full_name, bio, avatar_url")
@@ -89,6 +93,7 @@ export default function AdminSettingsPage() {
     };
     load();
   }, []);
+
 
   // ── Save handlers ─────────────────────────────────────────────────────────
   const saveProfile = async () => {
@@ -120,8 +125,6 @@ export default function AdminSettingsPage() {
   const savePlatform = async () => {
     setSavingPlatform(true);
     setPlatformMsg(null);
-    // Platform settings would typically go to a settings table.
-    // For now we simulate a save — wire up to your DB as needed.
     await new Promise((r) => setTimeout(r, 800));
     setPlatformMsg({ type: "success", text: "Configuración de plataforma guardada." });
     setSavingPlatform(false);
@@ -170,34 +173,14 @@ export default function AdminSettingsPage() {
         </CardHeader>
         <CardContent className="space-y-5">
           {/* Avatar */}
-          <div className="flex items-center gap-4">
-            <div className="w-20 h-20 rounded-full overflow-hidden bg-gray-100 border-2 border-gray-200 flex-shrink-0">
-              {profile.avatar_url ? (
-                <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover"
-                  onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-2xl font-bold text-gray-400">
-                  {profile.full_name?.[0]?.toUpperCase() || "A"}
-                </div>
-              )}
-            </div>
-            <div className="flex-1">
-              <Label htmlFor="avatar_url">URL de foto de perfil</Label>
-              <Input
-                id="avatar_url"
-                value={profile.avatar_url}
-                onChange={(e) => setProfile((p) => ({ ...p, avatar_url: e.target.value }))}
-                placeholder="https://ejemplo.com/foto.jpg"
-                className="mt-1"
-              />
-                <p className="text-xs text-gray-400 mt-1">
-                Para obtener una URL: busca una imagen en la web → clic derecho →{" "}
-                <span className="font-medium text-gray-500">"Copiar dirección de imagen"</span> → pega aquí.
-                También puedes usar imágenes de{" "}
-                <span className="font-medium text-gray-500">Unsplash, Imgur o Cloudinary</span>.
-                Si dejas esto vacío se usa tu foto de Google.
-                </p>
-            </div>
+          <div>
+            <Label className="mb-2 block">Foto de perfil</Label>
+            <ProfileAvatarUpload
+              userId={userId}
+              currentUrl={profile.avatar_url}
+              fullName={profile.full_name}
+              onUrlChange={(url) => setProfile((p) => ({ ...p, avatar_url: url }))}
+            />
           </div>
 
           {/* Name */}
@@ -305,10 +288,10 @@ export default function AdminSettingsPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           {[
-            { key: "new_enrollment",   label: "Nueva inscripción a un curso",        desc: "Recibe un correo cada vez que un estudiante se inscribe" },
-            { key: "course_approved",  label: "Curso aprobado / rechazado",          desc: "Confirmación cuando un curso cambia de estado" },
-            { key: "payout_processed", label: "Pago procesado a instructor",         desc: "Notificación de cada transferencia completada" },
-            { key: "weekly_summary",   label: "Resumen semanal de actividad",        desc: "Un correo cada lunes con métricas de la semana" },
+            { key: "new_enrollment",   label: "Nueva inscripción a un curso",   desc: "Recibe un correo cada vez que un estudiante se inscribe" },
+            { key: "course_approved",  label: "Curso aprobado / rechazado",     desc: "Confirmación cuando un curso cambia de estado" },
+            { key: "payout_processed", label: "Pago procesado a instructor",    desc: "Notificación de cada transferencia completada" },
+            { key: "weekly_summary",   label: "Resumen semanal de actividad",   desc: "Un correo cada lunes con métricas de la semana" },
           ].map(({ key, label, desc }) => (
             <div key={key} className="flex items-start justify-between gap-4 py-2 border-b border-gray-100 last:border-0">
               <div>
