@@ -1052,19 +1052,22 @@ export default function UnifiedCourseEditor({
 
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from("sections")
-        .delete()
-        .eq("id", deleteDialog.chapterId);
+      const res = await fetch(`/api/sections/${deleteDialog.chapterId}`, {
+        method: "DELETE",
+      });
 
-      if (error) throw error;
+      const result = await res.json();
+
+      if (!res.ok) {
+        throw new Error(result.error || "Error al eliminar capítulo");
+      }
 
       setSections(sections.filter((s) => s.id !== deleteDialog.chapterId));
       closeDeleteDialog();
-      router.refresh();
-    } catch (error) {
+      toast.success("Capítulo eliminado exitosamente");
+    } catch (error: any) {
       console.error("Error deleting chapter:", error);
-      setSuccessMessage("Error al eliminar capítulo");
+      toast.error(error.message || "Error al eliminar capítulo");
     } finally {
       setSaving(false);
     }

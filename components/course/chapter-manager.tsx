@@ -159,17 +159,20 @@ export default function ChapterManager({
     }
 
     try {
-      const { error } = await supabase
-        .from("sections")
-        .delete()
-        .eq("id", sectionId);
+      const res = await fetch(`/api/sections/${sectionId}`, {
+        method: "DELETE",
+      });
 
-      if (error) throw error;
+      const result = await res.json();
+
+      if (!res.ok) {
+        throw new Error(result.error || "Error al eliminar capítulo");
+      }
 
       setSections(sections.filter((s) => s.id !== sectionId));
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error deleting section:", error);
-      alert("Error al eliminar capítulo");
+      alert(error.message || "Error al eliminar capítulo");
     }
   };
 
