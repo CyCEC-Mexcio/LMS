@@ -14,8 +14,12 @@ interface ProfileAvatarUploadProps {
 }
 
 function convertDriveUrl(url: string): string {
+  // Use thumbnail endpoint — uc?export=view is deprecated (shows virus scan page)
   const match = url.match(/drive\.google\.com\/file\/d\/([^/]+)/);
-  if (match) return `https://drive.google.com/uc?export=view&id=${match[1]}`;
+  if (match) return `https://drive.google.com/thumbnail?id=${match[1]}&sz=w800`;
+  // Also handle old uc?export=view URLs
+  const ucMatch = url.match(/drive\.google\.com\/uc\?.*id=([a-zA-Z0-9_-]+)/);
+  if (ucMatch) return `https://drive.google.com/thumbnail?id=${ucMatch[1]}&sz=w800`;
   return url;
 }
 

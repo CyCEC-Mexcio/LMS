@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { transformImageUrl } from "@/lib/image-url";
 import {
   Dialog,
   DialogContent,
@@ -465,6 +466,7 @@ function CertificateSettings({
                       src={logo}
                       alt="Logo"
                       className="w-full h-full object-contain bg-white transition-opacity group-hover:opacity-60 p-2"
+                      referrerPolicy="no-referrer"
                     />
                     <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40">
                       <label className="cursor-pointer bg-white text-black px-4 py-2 rounded-md font-medium text-sm hover:bg-gray-100 transition-colors shadow-lg flex items-center gap-2">
@@ -562,7 +564,15 @@ function CertificateSettings({
                 <Button
                   onClick={() => {
                     if (logoInputUrl.trim()) {
-                      setLogo(logoInputUrl.trim());
+                      const result = transformImageUrl(logoInputUrl);
+                      setLogo(result.url);
+                      if (result.transformed) {
+                        setLogoInputUrl(result.url);
+                        toast.info("URL convertida automáticamente para visualización directa.");
+                      }
+                      if (result.warning) {
+                        toast.warning(result.warning);
+                      }
                       toast.success("URL de logo aplicada. Recuerda hacer clic en 'Guardar Configuración'.");
                     }
                   }}
@@ -581,6 +591,7 @@ function CertificateSettings({
                       src={logo}
                       alt="Logo"
                       className="w-full h-full object-contain p-2 bg-white"
+                      referrerPolicy="no-referrer"
                       onError={(e) => {
                         (e.target as HTMLImageElement).style.display = 'none';
                       }}
@@ -588,6 +599,21 @@ function CertificateSettings({
                         (e.target as HTMLImageElement).style.display = 'block';
                       }}
                     />
+                    {/* Show error if Drive image fails */}
+                    {logo.includes('drive.google.com') && (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 text-center p-2" style={{ display: 'none' }} ref={(el) => {
+                        if (!el) return;
+                        const img = el.previousElementSibling as HTMLImageElement;
+                        if (img) {
+                          img.onerror = () => { img.style.display = 'none'; el.style.display = 'flex'; };
+                          img.onload = () => { img.style.display = 'block'; el.style.display = 'none'; };
+                        }
+                      }}>
+                        <AlertTriangle className="w-5 h-5 text-red-400" />
+                        <p className="text-xs text-red-600 font-medium">No se pudo cargar</p>
+                        <p className="text-xs text-muted-foreground">El archivo debe ser público en Google Drive</p>
+                      </div>
+                    )}
                   </div>
                   <div className="flex gap-2">
                     <Button
@@ -703,6 +729,10 @@ export default function UnifiedCourseEditor({
   // Thumbnail delete confirmation
   const [deleteThumbnailConfirm, setDeleteThumbnailConfirm] = useState(false);
 
+  // Thumbnail URL warning (for cloud storage links)
+  const [thumbnailWarning, setThumbnailWarning] = useState<string | null>(null);
+  const [thumbnailLoadError, setThumbnailLoadError] = useState(false);
+
   const categories = [
     "Programación",
     "Diseño",
@@ -795,7 +825,9 @@ export default function UnifiedCourseEditor({
       if (thumbnailFile) {
         finalThumbnailUrl = await handleThumbnailUpload(thumbnailFile);
       } else if (thumbnailUrl.trim()) {
-        finalThumbnailUrl = thumbnailUrl.trim();
+        // Transform cloud storage URLs before saving
+        const result = transformImageUrl(thumbnailUrl);
+        finalThumbnailUrl = result.url;
       }
 
       const {
@@ -1573,40 +1605,87 @@ export default function UnifiedCourseEditor({
                     <div className="space-y-3">
                       <Input
                         value={thumbnailUrl}
-                        onChange={(e) => setThumbnailUrl(e.target.value)}
-                        placeholder="https://ejemplo.com/imagen.jpg"
+                        onChange={(e) => {
+                          setThumbnailUrl(e.target.value);
+                          setThumbnailWarning(null);
+                          setThumbnailLoadError(false);
+                        }}
+                        placeholder="https://ejemplo.com/imagen.jpg o enlace de Google Drive"
                         disabled={creating}
                         type="url"
                       />
-                      {thumbnailUrl.trim() && (
-                        <div className="space-y-2">
-                          <div className="relative rounded-lg overflow-hidden border border-border aspect-video bg-muted">
-                            <img
-                              src={thumbnailUrl}
-                              alt="Vista previa"
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).style.display = 'none';
+                      {thumbnailUrl.trim() && (() => {
+                        const result = transformImageUrl(thumbnailUrl);
+                        const previewUrl = result.url;
+                        return (
+                          <div className="space-y-2">
+                            {result.warning && (
+                              <div className="flex items-start gap-2 p-2.5 bg-amber-50 border border-amber-200 rounded-lg">
+                                <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                                <p className="text-xs text-amber-800">{result.warning}</p>
+                              </div>
+                            )}
+                            {result.transformed && (
+                              <div className="flex items-start gap-2 p-2.5 bg-blue-50 border border-blue-200 rounded-lg">
+                                <CheckCircle className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
+                                <p className="text-xs text-blue-800">URL convertida automáticamente para visualización directa.</p>
+                              </div>
+                            )}
+                            <div className="relative rounded-lg overflow-hidden border border-border aspect-video bg-muted">
+                              <img
+                                src={previewUrl}
+                                alt="Vista previa"
+                                className="w-full h-full object-cover"
+                                referrerPolicy="no-referrer"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).style.display = 'none';
+                                  setThumbnailLoadError(true);
+                                }}
+                                onLoad={(e) => {
+                                  (e.target as HTMLImageElement).style.display = 'block';
+                                  setThumbnailLoadError(false);
+                                }}
+                              />
+                              {thumbnailLoadError && (
+                                <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 text-center p-3">
+                                  <AlertTriangle className="w-6 h-6 text-red-400" />
+                                  <p className="text-xs text-red-600 font-medium">No se pudo cargar la imagen</p>
+                                  {previewUrl.includes('drive.google.com') ? (
+                                    <div className="text-left bg-white/90 rounded-lg p-2.5 border border-red-200 mt-1">
+                                      <p className="text-xs text-red-800 font-medium mb-1.5">El archivo debe ser público en Google Drive:</p>
+                                      <ol className="text-xs text-muted-foreground space-y-0.5 list-decimal list-inside">
+                                        <li>Abre el archivo en Google Drive</li>
+                                        <li>Clic derecho → <strong>Compartir</strong></li>
+                                        <li>En "Acceso general" cambia a <strong>"Cualquier persona con el enlace"</strong></li>
+                                        <li>Rol: <strong>Lector</strong></li>
+                                        <li>Clic en <strong>Listo</strong></li>
+                                      </ol>
+                                    </div>
+                                  ) : (
+                                    <p className="text-xs text-muted-foreground">Asegúrate de que el archivo sea público o accesible sin inicio de sesión.</p>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setThumbnailUrl("");
+                                setThumbnailWarning(null);
+                                setThumbnailLoadError(false);
                               }}
-                              onLoad={(e) => {
-                                (e.target as HTMLImageElement).style.display = 'block';
-                              }}
-                            />
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 w-full"
+                            >
+                              <Trash2 className="w-3.5 h-3.5 mr-1" />
+                              Quitar URL
+                            </Button>
                           </div>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setThumbnailUrl("")}
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 w-full"
-                          >
-                            <Trash2 className="w-3.5 h-3.5 mr-1" />
-                            Quitar URL
-                          </Button>
-                        </div>
-                      )}
+                        );
+                      })()}
                       <p className="text-xs text-muted-foreground">
-                        Pega el enlace directo a una imagen
+                        Soporta enlaces directos, Google Drive y OneDrive. Los enlaces se convierten automáticamente.
                       </p>
                     </div>
                   )}
@@ -2352,6 +2431,7 @@ export default function UnifiedCourseEditor({
                           src={course.thumbnail_url}
                           alt="Course thumbnail"
                           className="w-full h-full object-cover transition-opacity group-hover:opacity-60"
+                          referrerPolicy="no-referrer"
                         />
                         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40">
                           <label className="cursor-pointer bg-white text-black px-4 py-2 rounded-md font-medium text-sm hover:bg-gray-100 transition-colors shadow-lg flex items-center gap-2">
@@ -2445,8 +2525,12 @@ export default function UnifiedCourseEditor({
                   <div className="flex gap-2">
                     <Input
                       value={thumbnailUrl}
-                      onChange={(e) => setThumbnailUrl(e.target.value)}
-                      placeholder="https://ejemplo.com/imagen.jpg"
+                      onChange={(e) => {
+                        setThumbnailUrl(e.target.value);
+                        setThumbnailWarning(null);
+                        setThumbnailLoadError(false);
+                      }}
+                      placeholder="https://ejemplo.com/imagen.jpg o enlace de Google Drive"
                       disabled={saving}
                       type="url"
                       className="flex-1"
@@ -2455,46 +2539,103 @@ export default function UnifiedCourseEditor({
                       onClick={async () => {
                          if (!thumbnailUrl.trim()) return;
                          setSaving(true);
+                         setThumbnailWarning(null);
+                         setThumbnailLoadError(false);
                          try {
+                            // Transform cloud storage URLs before saving
+                            const result = transformImageUrl(thumbnailUrl);
+                            const finalUrl = result.url;
+
+                            if (result.warning) {
+                              setThumbnailWarning(result.warning);
+                            }
+
+                            if (result.transformed) {
+                              toast.info("URL convertida automáticamente para visualización directa.");
+                              // Update the input to show the transformed URL
+                              setThumbnailUrl(finalUrl);
+                            }
+
                             await supabase
                                 .from("courses")
-                                .update({ thumbnail_url: thumbnailUrl.trim() })
+                                .update({ thumbnail_url: finalUrl })
                                 .eq("id", courseId);
                             setCourse((prev) =>
-                                prev ? { ...prev, thumbnail_url: thumbnailUrl.trim() } : null
+                                prev ? { ...prev, thumbnail_url: finalUrl } : null
                             );
-                            setSuccessMessage("URL guardada exitosamente");
+                            toast.success("Imagen de portada guardada exitosamente");
                             router.refresh();
                          } catch (error) {
                             console.error("Error setting thumbnail URL:", error);
+                            toast.error("Error al guardar la URL de imagen");
                          } finally {
                             setSaving(false);
                          }
                       }}
                       disabled={saving || !thumbnailUrl.trim() || thumbnailUrl.trim() === course.thumbnail_url}
                     >
+                      {saving ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
                       Guardar URL
                     </Button>
                   </div>
-                  <div className="aspect-video w-full rounded-lg overflow-hidden bg-muted border border-border">
+
+                  {/* URL transformation warning */}
+                  {thumbnailWarning && (
+                    <div className="flex items-start gap-2 p-2.5 bg-amber-50 border border-amber-200 rounded-lg">
+                      <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                      <p className="text-xs text-amber-800">{thumbnailWarning}</p>
+                    </div>
+                  )}
+
+                  {/* Image preview */}
+                  <div className="aspect-video w-full rounded-lg overflow-hidden bg-muted border border-border relative">
                     {course.thumbnail_url ? (
-                      <img
-                        src={course.thumbnail_url}
-                        alt="Course thumbnail"
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = 'none';
-                        }}
-                        onLoad={(e) => {
-                          (e.target as HTMLImageElement).style.display = 'block';
-                        }}
-                      />
+                      <>
+                        <img
+                          src={course.thumbnail_url}
+                          alt="Course thumbnail"
+                          className="w-full h-full object-cover"
+                          referrerPolicy="no-referrer"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                            setThumbnailLoadError(true);
+                          }}
+                          onLoad={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'block';
+                            setThumbnailLoadError(false);
+                          }}
+                        />
+                        {thumbnailLoadError && (
+                          <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 text-center p-3">
+                            <AlertTriangle className="w-6 h-6 text-red-400" />
+                            <p className="text-sm text-red-600 font-medium">No se pudo cargar la imagen</p>
+                            {course.thumbnail_url?.includes('drive.google.com') ? (
+                              <div className="text-left bg-white/90 rounded-lg p-2.5 border border-red-200 mt-1">
+                                <p className="text-xs text-red-800 font-medium mb-1.5">El archivo debe ser público en Google Drive:</p>
+                                <ol className="text-xs text-muted-foreground space-y-0.5 list-decimal list-inside">
+                                  <li>Abre el archivo en Google Drive</li>
+                                  <li>Clic derecho → <strong>Compartir</strong></li>
+                                  <li>En "Acceso general" cambia a <strong>"Cualquier persona con el enlace"</strong></li>
+                                  <li>Rol: <strong>Lector</strong></li>
+                                  <li>Clic en <strong>Listo</strong>, luego vuelve a guardar la URL aquí</li>
+                                </ol>
+                              </div>
+                            ) : (
+                              <p className="text-xs text-muted-foreground">Asegúrate de que el archivo sea público o accesible sin inicio de sesión.</p>
+                            )}
+                          </div>
+                        )}
+                      </>
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-muted-foreground text-sm">
                         Sin imagen
                       </div>
                     )}
                   </div>
+
+                  <p className="text-xs text-muted-foreground">
+                    Soporta enlaces directos, Google Drive y OneDrive/SharePoint. Los enlaces se convierten automáticamente.
+                  </p>
                 </div>
               )}
               <p className="text-xs text-muted-foreground mt-3">
