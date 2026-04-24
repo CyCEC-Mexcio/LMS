@@ -193,6 +193,7 @@ export default async function CourseDetailPage({
                       src={course.thumbnail_url}
                       alt={course.title}
                       className="w-full aspect-video object-cover rounded-lg mb-4"
+                      referrerPolicy="no-referrer"
                     />
                   ) : (
                     <div className="w-full aspect-video bg-gray-100 rounded-lg mb-4 flex items-center justify-center">
@@ -214,10 +215,14 @@ export default async function CourseDetailPage({
                     <div className="flex items-center gap-2">
                       <Clock className="w-4 h-4" />
                       <span>
-                        {totalDuration >= 60
-                          ? `${Math.floor(totalDuration / 60)}h ${totalDuration % 60}m`
-                          : `${totalDuration} min`}{" "}
-                        de contenido
+                        {totalDuration > 0
+                          ? (
+                            totalDuration >= 60
+                              ? `${Math.floor(totalDuration / 60)}h ${totalDuration % 60}m`
+                              : `${totalDuration} min`
+                          )
+                          : "Duración por definir"}{" "}
+                        {totalDuration > 0 && "de contenido"}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
@@ -460,10 +465,14 @@ export default async function CourseDetailPage({
                   <div className="flex items-center gap-2">
                     <Clock className="w-4 h-4 text-gray-400" />
                     <span>
-                      {totalDuration >= 60
-                        ? `${Math.floor(totalDuration / 60)}h ${totalDuration % 60}m`
-                        : `${totalDuration} min`}{" "}
-                      de contenido
+                      {totalDuration > 0
+                        ? (
+                          totalDuration >= 60
+                            ? `${Math.floor(totalDuration / 60)}h ${totalDuration % 60}m`
+                            : `${totalDuration} min`
+                        )
+                        : "Duración por definir"}{" "}
+                      {totalDuration > 0 && "de contenido"}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
