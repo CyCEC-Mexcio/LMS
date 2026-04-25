@@ -1,4 +1,5 @@
 import Image from "next/image"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ArrowRight, Award, CheckCircle } from "lucide-react"
@@ -13,23 +14,27 @@ export function HeroSection() {
             <Badge variant="secondary" className="px-4 py-2 text-sm font-medium">
               Certificaciones ISO 9001:2015
             </Badge>
-            
+
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground leading-tight text-balance">
               Impulsa tu Carrera con Certificaciones Oficiales
             </h1>
-            
+
             <p className="text-lg text-muted-foreground leading-relaxed max-w-xl">
-              Ofrecemos capacitación, consultoría y certificación de competencias alineadas 
+              Ofrecemos capacitación, consultoría y certificación de competencias alineadas
               a estándares oficiales e internacionales para profesionales y empresas.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4">
-              <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2">
-                Ver Cursos
-                <ArrowRight className="h-4 w-4" />
+              <Button asChild size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2">
+                <Link href="/courses">
+                  Ver Cursos
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
               </Button>
-              <Button size="lg" variant="outline" className="border-foreground/20 text-foreground hover:bg-secondary bg-transparent">
-                Contacto
+              <Button asChild size="lg" variant="outline" className="border-foreground/20 text-foreground hover:bg-secondary bg-transparent">
+                <Link href="/contacto">
+                  Contacto
+                </Link>
               </Button>
             </div>
 
@@ -52,7 +57,7 @@ export function HeroSection() {
           {/* Image */}
           <div className="relative">
             <div className="relative rounded-2xl overflow-hidden shadow-2xl">
-              <Image 
+              <Image
                 src="/images/Equipo profesional en capacitación.jpeg"
                 alt="Equipo profesional en capacitación"
                 width={600}
@@ -61,7 +66,7 @@ export function HeroSection() {
                 priority
               />
             </div>
-            
+
             {/* Floating badge */}
             <div className="absolute -bottom-6 -right-6 bg-card rounded-xl p-4 shadow-xl border border-border">
               <div className="flex items-center gap-3">
