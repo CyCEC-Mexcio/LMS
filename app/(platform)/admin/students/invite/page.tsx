@@ -62,7 +62,7 @@ export default function StudentInvitePage() {
 
       // Courses: admin sees all, teacher sees own
       let cq = supabase.from("courses").select("id, title, price");
-      if (profile.role === "teacher") cq = cq.eq("instructor_id", user.id);
+      if (profile.role === "teacher") cq = cq.eq("teacher_id", user.id);
       const { data: cData } = await cq.order("title");
       setCourses(cData || []);
 

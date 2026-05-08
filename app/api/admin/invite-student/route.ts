@@ -43,7 +43,7 @@ export async function POST(request: Request) {
     // ── Validate course ─────────────────────────────────────────────────────
     const { data: course, error: courseError } = await supabase
       .from("courses")
-      .select("id, title, price, instructor_id, instructor_name")
+      .select("id, title, price, teacher_id, instructor_name")
       .eq("id", courseId)
       .single();
 
@@ -55,7 +55,7 @@ export async function POST(request: Request) {
     }
 
     // Teachers can only invite to their own courses
-    if (profile.role === "teacher" && course.instructor_id !== user.id) {
+    if (profile.role === "teacher" && course.teacher_id !== user.id) {
       return NextResponse.json(
         { error: "Solo puedes invitar estudiantes a tus propios cursos" },
         { status: 403 }
