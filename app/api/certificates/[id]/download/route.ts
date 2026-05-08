@@ -313,9 +313,9 @@ export async function GET(
       const sigImageBytes = fs.readFileSync(sigImagePath);
       const sigImage = await pdfDoc.embedPng(sigImageBytes);
 
-      // Scale signature to fit nicely above the line (max 130×65)
-      const sigMaxW = 130;
-      const sigMaxH = 65;
+      // Scale signature to fit prominently above the line (max 200×100)
+      const sigMaxW = 200;
+      const sigMaxH = 120;
       const sigAspect = sigImage.width / sigImage.height;
       let sigDrawW = sigMaxW;
       let sigDrawH = sigDrawW / sigAspect;
