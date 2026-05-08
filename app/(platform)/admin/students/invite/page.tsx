@@ -255,7 +255,7 @@ export default function StudentInvitePage() {
             <Label>Precio para el Estudiante</Label>
             <div className="mt-2 flex flex-wrap gap-2">
               {([
-                { value: "full", label: "Precio Completo", desc: selectedCourse?.price ? `$${Number(selectedCourse.price).toFixed(2)} MXN` : "Gratuito" },
+                { value: "full", label: "Precio Completo", desc: !selectedCourse ? "Selecciona un curso" : selectedCourse.price ? `$${Number(selectedCourse.price).toFixed(2)} MXN` : "Gratuito" },
                 { value: "free", label: "Gratis", desc: "$0 MXN" },
                 { value: "discount", label: "Descuento Personalizado", desc: "% o precio fijo" },
               ] as const).map((opt) => (
