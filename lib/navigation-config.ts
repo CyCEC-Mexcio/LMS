@@ -77,6 +77,12 @@ export const navigationItems: NavItem[] = [
     roles: ["teacher"],
   },
   {
+    title: "Invitar Estudiantes",
+    href: "/admin/students/invite",
+    icon: "✉️",
+    roles: ["teacher"],
+  },
+  {
     title: "Configuración",           
     href: "/teacher/settings",
     icon: "⚙️",
@@ -118,6 +124,12 @@ export const navigationItems: NavItem[] = [
     title: "Crear Instructor",
     href: "/admin/create-instructor",
     icon: "👨‍🏫",
+    roles: ["admin"],
+  },
+  {
+    title: "Invitar Estudiantes",
+    href: "/admin/students/invite",
+    icon: "✉️",
     roles: ["admin"],
   },
   {

@@ -48,6 +48,7 @@ export default async function AdminDashboardPage() {
     { href: "/admin/courses", icon: "📚", bg: "bg-green-100", label: "Gestionar Cursos", desc: "Ver y editar todos los cursos" },
     { href: "/admin/courses/pending", icon: "⏳", bg: "bg-yellow-100", label: "Cursos Pendientes", desc: "Aprobar cursos de instructores", badge: pendingCourses ?? 0 },
     { href: "/admin/create-instructor", icon: "👨‍🏫", bg: "bg-purple-100", label: "Crear Instructor", desc: "Invitar nuevos instructores" },
+    { href: "/admin/students/invite", icon: "✉️", bg: "bg-teal-100", label: "Invitar Estudiantes", desc: "Pre-inscribir estudiantes a cursos" },
     { href: "/admin/users", icon: "👥", bg: "bg-indigo-100", label: "Usuarios", desc: "Gestionar cuentas de usuarios" },
     { href: "/admin/payouts", icon: "💳", bg: "bg-pink-100", label: "Pagos", desc: "Gestionar pagos a instructores" },
     { href: "/admin/settings", icon: "⚙️", bg: "bg-gray-100", label: "Configuración", desc: "Ajustes de la plataforma" },
