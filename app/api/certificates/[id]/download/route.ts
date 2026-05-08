@@ -4,6 +4,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
+import fs from "fs";
+import path from "path";
 
 export async function GET(
   request: Request,
@@ -304,6 +306,38 @@ export async function GET(
     // Signature line (bottom-left)
     const sigLineX = 120;
     const sigLineW = 220;
+
+    // ── Signature image above the line ────────────────────────────────────
+    try {
+      const sigImagePath = path.join(process.cwd(), "public", "images", "signature-ramirez.png");
+      const sigImageBytes = fs.readFileSync(sigImagePath);
+      const sigImage = await pdfDoc.embedPng(sigImageBytes);
+
+      // Scale signature to fit nicely above the line (max 130×65)
+      const sigMaxW = 130;
+      const sigMaxH = 65;
+      const sigAspect = sigImage.width / sigImage.height;
+      let sigDrawW = sigMaxW;
+      let sigDrawH = sigDrawW / sigAspect;
+      if (sigDrawH > sigMaxH) {
+        sigDrawH = sigMaxH;
+        sigDrawW = sigDrawH * sigAspect;
+      }
+
+      // Center the signature image above the signature line
+      const sigImgX = sigLineX + sigLineW / 2 - sigDrawW / 2;
+      const sigImgY = bottomY + 48; // just above the line
+      page.drawImage(sigImage, {
+        x: sigImgX,
+        y: sigImgY,
+        width: sigDrawW,
+        height: sigDrawH,
+      });
+    } catch (sigErr) {
+      console.error("Error embedding signature image:", sigErr);
+    }
+
+    // Draw the signature line
     page.drawRectangle({
       x: sigLineX,
       y: bottomY + 45,
