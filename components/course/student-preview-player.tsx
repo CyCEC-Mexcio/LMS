@@ -234,7 +234,7 @@ export default function StudentPreviewPlayer({
     // Default: No Video / Text Lesson Content preview
     return (
       <div className="bg-slate-50 border border-gray-200 rounded-xl p-12 text-center aspect-video flex flex-col items-center justify-center">
-        <BookOpen className="w-16 h-16 text-blue-600 mb-4" />
+        <BookOpen className="w-16 h-16 text-gray-400 mb-4" />
         <h3 className="text-xl font-bold mb-2 text-gray-900">Clase Teórica: {currentLesson.title}</h3>
         <p className="text-gray-500 text-sm max-w-md">
           Esta lección contiene material de estudio completo. Lee la guía de contenido y descarga los recursos a continuación.
@@ -251,7 +251,7 @@ export default function StudentPreviewPlayer({
     html = html.replace(/^# (.+)$/gm, '<h2 class="text-xl font-bold mt-4 mb-2">$1</h2>');
     html = html.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
     html = html.replace(/\*(.+?)\*/g, "<em>$1</em>");
-    html = html.replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">$1</a>');
+    html = html.replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-gray-900 hover:underline font-medium">$1</a>');
     html = html.replace(/^- (.+)$/gm, '<li class="ml-4">$1</li>');
     html = html.replace(/\n/g, "<br />");
     return html;
@@ -271,7 +271,7 @@ export default function StudentPreviewPlayer({
           </Link>
           <div className="h-6 w-px bg-gray-200 hidden sm:block" />
           <div>
-            <span className="text-[10px] text-blue-600 font-bold tracking-wider uppercase block">
+            <span className="text-[10px] text-gray-500 font-bold tracking-wider uppercase block">
               Vista Previa Gratuita
             </span>
             <h1 className="text-sm sm:text-base font-bold text-gray-900 truncate max-w-xs sm:max-w-md">
@@ -310,7 +310,7 @@ export default function StudentPreviewPlayer({
             {/* Simple Clean Preview Banner below video */}
             <div className="bg-gray-50 px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-gray-200">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-50 rounded-lg border border-blue-100 text-blue-600">
+                <div className="p-2 bg-gray-100 rounded-lg border border-gray-200 text-gray-500">
                   <Sparkles className="w-5 h-5" />
                 </div>
                 <div>
@@ -323,7 +323,7 @@ export default function StudentPreviewPlayer({
                   setSelectedLockedLesson(null);
                   setShowLockDialog(true);
                 }}
-                className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-4 py-2 font-semibold transition-all rounded-lg shrink-0"
+                className="bg-gray-800 hover:bg-gray-900 text-white text-xs px-4 py-2 font-semibold transition-all rounded-lg shrink-0"
               >
                 Inscribirse al curso completo
               </Button>
@@ -333,8 +333,8 @@ export default function StudentPreviewPlayer({
           {/* Lesson Metadata details */}
           {currentLesson && (
             <div className="space-y-6">
-              <div className="border-b border-gray-250 pb-4">
-                <span className="text-xs font-semibold bg-blue-50 border border-blue-150 text-blue-600 px-2.5 py-1 rounded-full inline-block mb-3">
+              <div className="border-b border-gray-200 pb-4">
+                <span className="text-xs font-semibold bg-gray-100 border border-gray-200 text-gray-600 px-2.5 py-1 rounded-full inline-block mb-3">
                   Clase {currentLesson.position}
                 </span>
                 <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">{currentLesson.title}</h2>
@@ -373,7 +373,7 @@ export default function StudentPreviewPlayer({
               {/* Resources / Attachments */}
               {currentLesson.resources && (Array.isArray(currentLesson.resources) ? currentLesson.resources.length > 0 : Object.keys(currentLesson.resources).length > 0) && (
                 <div className="space-y-3">
-                  <h3 className="text-sm font-bold uppercase tracking-wider text-gray-400">Material de Apoyo para esta clase</h3>
+                  <h3 className="text-sm font-bold uppercase tracking-wider text-gray-450">Material de Apoyo para esta clase</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {(Array.isArray(currentLesson.resources) ? currentLesson.resources : Object.values(currentLesson.resources)).map((resource: any, idx: number) => (
                       <a
@@ -386,7 +386,7 @@ export default function StudentPreviewPlayer({
                         <div className="flex items-center gap-3 min-w-0">
                           <span className="text-xl">📎</span>
                           <div className="min-w-0">
-                            <p className="font-semibold text-gray-800 text-sm truncate group-hover:text-blue-600">
+                            <p className="font-semibold text-gray-800 text-sm truncate group-hover:text-gray-900 group-hover:underline">
                               {resource.title || resource.name || "Descargar Recurso"}
                             </p>
                             {resource.description && (
@@ -430,16 +430,13 @@ export default function StudentPreviewPlayer({
                         <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
                       )}
                       <div className="min-w-0">
-                        <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider block">
-                          Módulo {sIdx + 1}
-                        </span>
                         <h4 className="font-bold text-xs sm:text-sm text-gray-800 truncate pr-2">
-                          {section.title}
+                          {sIdx + 1}. {section.title}
                         </h4>
                       </div>
                     </div>
                     {freeSecLessons > 0 && (
-                      <Badge className="bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-200 text-[10px] shrink-0 font-medium py-0.5">
+                      <Badge className="bg-emerald-50 text-emerald-750 hover:bg-emerald-100 border-emerald-200 text-[10px] shrink-0 font-medium py-0.5">
                         {freeSecLessons} {freeSecLessons === 1 ? "gratis" : "gratis"}
                       </Badge>
                     )}
@@ -457,19 +454,19 @@ export default function StudentPreviewPlayer({
                             onClick={() => handleLessonClick(lesson)}
                             className={`w-full flex items-start gap-3 p-3 rounded-lg text-left transition-all ${
                               isCurrent
-                                ? "bg-blue-50/80 border-l-4 border-blue-600 text-blue-900"
+                                ? "bg-gray-100 border-l-4 border-gray-850 text-gray-900 font-semibold"
                                 : "hover:bg-white text-gray-650 hover:text-gray-900"
                             }`}
                           >
                             {isFree ? (
-                              <Play className={`w-4 h-4 mt-0.5 flex-shrink-0 ${isCurrent ? "text-blue-600" : "text-emerald-600"}`} />
+                              <Play className={`w-4 h-4 mt-0.5 flex-shrink-0 ${isCurrent ? "text-gray-900" : "text-emerald-600"}`} />
                             ) : (
                               <Lock className="w-4 h-4 mt-0.5 text-gray-400 flex-shrink-0" />
                             )}
 
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center justify-between gap-2">
-                                <p className={`text-xs font-semibold ${isCurrent ? "text-blue-900" : "text-gray-800"}`}>
+                                <p className={`text-xs font-semibold ${isCurrent ? "text-gray-900" : "text-gray-800"}`}>
                                   {lIdx + 1}. {lesson.title}
                                 </p>
                                 {isFree && !isCurrent && (
@@ -511,7 +508,7 @@ export default function StudentPreviewPlayer({
       <Dialog open={showLockDialog} onOpenChange={setShowLockDialog}>
         <DialogContent className="bg-white border border-gray-200 text-gray-900 max-w-md p-6 rounded-2xl overflow-hidden shadow-lg">
           <DialogHeader className="text-center space-y-3">
-            <div className="w-14 h-14 bg-blue-50 border border-blue-100 rounded-2xl flex items-center justify-center mx-auto text-blue-600 mb-1">
+            <div className="w-14 h-14 bg-gray-100 border border-gray-250 rounded-2xl flex items-center justify-center mx-auto text-gray-700 mb-1">
               <Lock className="w-6 h-6" />
             </div>
             <DialogTitle className="text-xl font-bold text-gray-900 tracking-tight">
@@ -525,21 +522,21 @@ export default function StudentPreviewPlayer({
           {/* Value Props list */}
           <div className="my-5 space-y-3.5 bg-gray-50 p-4 rounded-xl border border-gray-200">
             <div className="flex items-start gap-3">
-              <ShieldCheck className="w-5 h-5 text-blue-600 mt-0.5 shrink-0" />
+              <ShieldCheck className="w-5 h-5 text-gray-700 mt-0.5 shrink-0" />
               <div>
                 <p className="text-xs font-bold text-gray-800">Acceso de por vida ilimitado</p>
                 <p className="text-[11px] text-gray-500 mt-0.5">Aprende a tu propio ritmo, desde cualquier dispositivo.</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
-              <Award className="w-5 h-5 text-blue-600 mt-0.5 shrink-0" />
+              <Award className="w-5 h-5 text-gray-700 mt-0.5 shrink-0" />
               <div>
                 <p className="text-xs font-bold text-gray-800">Certificación Oficial</p>
                 <p className="text-[11px] text-gray-500 mt-0.5">Recibe tu certificado descargable con validez curricular al completar.</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
-              <Sparkles className="w-5 h-5 text-blue-600 mt-0.5 shrink-0" />
+              <Sparkles className="w-5 h-5 text-gray-700 mt-0.5 shrink-0" />
               <div>
                 <p className="text-xs font-bold text-gray-800">Ejercicios y Evaluaciones</p>
                 <p className="text-[11px] text-gray-500 mt-0.5">Pon a prueba tus conocimientos con cuestionarios interactivos.</p>
