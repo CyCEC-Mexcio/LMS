@@ -322,9 +322,11 @@ export default async function CourseDetailPage({
                                     )}
                                   </span>
                                   {lesson.is_free_preview && (
-                                    <Badge variant="outline" className="text-xs">
-                                      Vista previa
-                                    </Badge>
+                                    <Link href={`/browse/${slug}/preview/${lesson.id}`}>
+                                      <Badge variant="outline" className="text-xs cursor-pointer hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-colors">
+                                        ▶ Vista previa
+                                      </Badge>
+                                    </Link>
                                   )}
                                 </li>
                               ))}
