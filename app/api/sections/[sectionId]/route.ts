@@ -64,7 +64,9 @@ export async function DELETE(
         sectionError?.details
       );
       return NextResponse.json(
-        { error: "Capítulo no encontrado" },
+        { 
+          error: `Capítulo no encontrado. Code: ${sectionError?.code || "none"}. Msg: ${sectionError?.message || "none"}. Details: ${sectionError?.details || "none"}. env_url_exists: ${!!process.env.NEXT_PUBLIC_SUPABASE_URL}, env_key_exists: ${!!process.env.SUPABASE_SERVICE_ROLE_KEY}` 
+        },
         { status: 404 }
       );
     }
