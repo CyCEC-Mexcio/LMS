@@ -786,7 +786,16 @@ export default function UnifiedCourseEditor({
         console.error("Error fetching sections:", sectionsError);
       }
 
-      setSections(sectionsData || []);
+      // Normalize sections: ensure lessons is always a proper array (Supabase nested
+      // joins can return {} instead of [] when no related records exist in some SDK versions)
+      const normalizedSections = (sectionsData || []).map((section: any) => ({
+        ...section,
+        lessons: Array.isArray(section.lessons)
+          ? section.lessons.sort((a: any, b: any) => a.position - b.position)
+          : [],
+      }));
+
+      setSections(normalizedSections);
     } catch (error: any) {
       console.error("Error in fetchCourseData:", error);
       setSuccessMessage("");

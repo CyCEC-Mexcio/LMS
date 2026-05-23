@@ -180,7 +180,8 @@ export default function ModularLessonEditor({
           setLessonTitle(lesson.title);
           setLessonDescription(lesson.description || "");
           setDurationMinutes(lesson.duration_minutes);
-          setIsFreePreview(lesson.is_free_preview);
+          // Explicitly coerce to boolean — DB may return null for older records
+          setIsFreePreview(lesson.is_free_preview === true);
 
           // Parse modules from lesson data
           const parsedModules: Module[] = [];
@@ -262,6 +263,13 @@ export default function ModularLessonEditor({
 
           setModules(parsedModules);
         }
+      } else {
+        // New lesson: explicitly reset all fields to defaults to prevent stale state
+        setLessonTitle("");
+        setLessonDescription("");
+        setDurationMinutes(null);
+        setIsFreePreview(false);
+        setModules([]);
       }
     } catch (error) {
       console.error("Error loading lesson:", error);
