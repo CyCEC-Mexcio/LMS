@@ -10,13 +10,10 @@ import {
   BookOpen, 
   Clock, 
   ArrowLeft, 
-  CheckCircle, 
-  PlayCircle,
   ChevronDown,
   ChevronRight,
   ExternalLink,
-  ShieldCheck,
-  Video
+  ShieldCheck
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -236,10 +233,10 @@ export default function StudentPreviewPlayer({
 
     // Default: No Video / Text Lesson Content preview
     return (
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-12 text-center aspect-video flex flex-col items-center justify-center text-white">
-        <BookOpen className="w-16 h-16 text-indigo-400 mb-4 animate-pulse" />
-        <h3 className="text-xl font-bold mb-2">Clase Teórica: {currentLesson.title}</h3>
-        <p className="text-slate-400 text-sm max-w-md">
+      <div className="bg-slate-50 border border-gray-200 rounded-xl p-12 text-center aspect-video flex flex-col items-center justify-center">
+        <BookOpen className="w-16 h-16 text-blue-600 mb-4" />
+        <h3 className="text-xl font-bold mb-2 text-gray-900">Clase Teórica: {currentLesson.title}</h3>
+        <p className="text-gray-500 text-sm max-w-md">
           Esta lección contiene material de estudio completo. Lee la guía de contenido y descarga los recursos a continuación.
         </p>
       </div>
@@ -261,23 +258,23 @@ export default function StudentPreviewPlayer({
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
+    <div className="min-h-screen bg-gray-50 text-gray-900 flex flex-col font-sans">
       {/* ── IMMERSIVE TOP BAR ─────────────────────────────────────────────────── */}
-      <header className="bg-slate-900/80 backdrop-blur-md border-b border-slate-800 px-6 py-4 flex items-center justify-between sticky top-0 z-50">
+      <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between sticky top-0 z-50 shadow-sm">
         <div className="flex items-center gap-4">
           <Link 
             href={`/browse/${course.slug}`}
-            className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors bg-slate-800 hover:bg-slate-700 px-3.5 py-2 rounded-lg text-sm font-medium border border-slate-700/50"
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors bg-gray-100 hover:bg-gray-200 px-3.5 py-2 rounded-lg text-sm font-medium border border-gray-300"
           >
             <ArrowLeft className="w-4 h-4" />
             Volver al curso
           </Link>
-          <div className="h-6 w-px bg-slate-800 hidden sm:block" />
+          <div className="h-6 w-px bg-gray-200 hidden sm:block" />
           <div>
-            <span className="text-xs text-indigo-400 font-semibold tracking-wider uppercase block">
-              Clase Abierta · Vista Previa Gratuita
+            <span className="text-[10px] text-blue-600 font-bold tracking-wider uppercase block">
+              Vista Previa Gratuita
             </span>
-            <h1 className="text-sm sm:text-base font-bold truncate max-w-xs sm:max-w-md">
+            <h1 className="text-sm sm:text-base font-bold text-gray-900 truncate max-w-xs sm:max-w-md">
               {course.title}
             </h1>
           </div>
@@ -285,8 +282,8 @@ export default function StudentPreviewPlayer({
 
         <div className="flex items-center gap-3">
           <div className="hidden lg:block text-right">
-            <span className="text-xs text-slate-400 block">¿Te gusta lo que ves?</span>
-            <span className="text-xs text-emerald-400 font-medium">Inscríbete para desbloquear el contenido</span>
+            <span className="text-xs text-gray-500 block">¿Te gusta lo que ves?</span>
+            <span className="text-xs text-emerald-600 font-semibold">Inscríbete para desbloquear el contenido</span>
           </div>
           <div className="scale-90 origin-right">
             <CoursePurchaseButton
@@ -305,20 +302,20 @@ export default function StudentPreviewPlayer({
       {/* ── DOUBLE COLUMN MAIN LAYOUT ────────────────────────────────────────── */}
       <main className="flex-1 flex flex-col lg:flex-row overflow-hidden">
         {/* Left Column: Theatre Mode viewport & metadata */}
-        <section className="flex-1 overflow-y-auto bg-slate-950 p-4 sm:p-6 lg:p-8 space-y-6">
+        <section className="flex-1 overflow-y-auto bg-gray-50 p-4 sm:p-6 lg:p-8 space-y-6">
           {/* Main Video/Viewport Frame */}
-          <div className="bg-slate-900 border border-slate-800/80 rounded-2xl overflow-hidden shadow-2xl shadow-indigo-950/20">
+          <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
             {videoElement}
             
-            {/* Immersive Preview Banner below video */}
-            <div className="bg-gradient-to-r from-indigo-950 via-slate-900 to-indigo-950 px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-800/50">
+            {/* Simple Clean Preview Banner below video */}
+            <div className="bg-gray-50 px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-gray-200">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-indigo-500/10 rounded-lg border border-indigo-500/20 text-indigo-400">
+                <div className="p-2 bg-blue-50 rounded-lg border border-blue-100 text-blue-600">
                   <Sparkles className="w-5 h-5" />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-white">Estás viendo una clase de prueba gratuita</p>
-                  <p className="text-xs text-slate-400">Inscríbete para acceder a tareas, exámenes, comunidad y el certificado oficial</p>
+                  <p className="text-sm font-semibold text-gray-900">Estás viendo una clase de prueba gratuita</p>
+                  <p className="text-xs text-gray-500">Inscríbete para acceder a tareas, exámenes, comunidad y el certificado oficial</p>
                 </div>
               </div>
               <Button 
@@ -326,7 +323,7 @@ export default function StudentPreviewPlayer({
                   setSelectedLockedLesson(null);
                   setShowLockDialog(true);
                 }}
-                className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-4 py-2 font-semibold shadow-lg shadow-indigo-500/20 transition-all rounded-lg shrink-0"
+                className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-4 py-2 font-semibold transition-all rounded-lg shrink-0"
               >
                 Inscribirse al curso completo
               </Button>
@@ -336,13 +333,13 @@ export default function StudentPreviewPlayer({
           {/* Lesson Metadata details */}
           {currentLesson && (
             <div className="space-y-6">
-              <div className="border-b border-slate-800/80 pb-4">
-                <span className="text-xs font-semibold bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 px-2.5 py-1 rounded-full inline-block mb-3">
+              <div className="border-b border-gray-250 pb-4">
+                <span className="text-xs font-semibold bg-blue-50 border border-blue-150 text-blue-600 px-2.5 py-1 rounded-full inline-block mb-3">
                   Clase {currentLesson.position}
                 </span>
-                <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">{currentLesson.title}</h2>
+                <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">{currentLesson.title}</h2>
                 {currentLesson.duration_minutes && (
-                  <div className="flex items-center gap-1.5 text-xs text-slate-400 mt-2">
+                  <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-2">
                     <Clock className="w-3.5 h-3.5" />
                     <span>{currentLesson.duration_minutes} minutos de duración</span>
                   </div>
@@ -351,20 +348,20 @@ export default function StudentPreviewPlayer({
 
               {/* Description & Written Content Card */}
               {(currentLesson.description || currentLesson.content) && (
-                <Card className="bg-slate-900/40 border border-slate-800/60 rounded-xl overflow-hidden backdrop-blur-sm">
+                <Card className="bg-white border border-gray-200 rounded-xl overflow-hidden">
                   <CardContent className="p-6 space-y-4">
                     {currentLesson.description && (
                       <div className="space-y-2">
-                        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Sinopsis de la Clase</h4>
-                        <p className="text-slate-300 text-sm leading-relaxed whitespace-pre-wrap">{currentLesson.description}</p>
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400">Sinopsis de la Clase</h4>
+                        <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap">{currentLesson.description}</p>
                       </div>
                     )}
-                    {currentLesson.description && currentLesson.content && <div className="h-px bg-slate-800/60 my-4" />}
+                    {currentLesson.description && currentLesson.content && <div className="h-px bg-gray-200 my-4" />}
                     {currentLesson.content && (
                       <div className="space-y-2">
-                        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Guía de Estudio</h4>
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400">Guía de Estudio</h4>
                         <div 
-                          className="prose prose-invert prose-sm max-w-none text-slate-300 leading-relaxed"
+                          className="prose prose-sm max-w-none text-gray-700 leading-relaxed"
                           dangerouslySetInnerHTML={{ __html: formatContent(currentLesson.content) }}
                         />
                       </div>
@@ -376,7 +373,7 @@ export default function StudentPreviewPlayer({
               {/* Resources / Attachments */}
               {currentLesson.resources && (Array.isArray(currentLesson.resources) ? currentLesson.resources.length > 0 : Object.keys(currentLesson.resources).length > 0) && (
                 <div className="space-y-3">
-                  <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400">Material de Apoyo para esta clase</h3>
+                  <h3 className="text-sm font-bold uppercase tracking-wider text-gray-400">Material de Apoyo para esta clase</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {(Array.isArray(currentLesson.resources) ? currentLesson.resources : Object.values(currentLesson.resources)).map((resource: any, idx: number) => (
                       <a
@@ -384,20 +381,20 @@ export default function StudentPreviewPlayer({
                         href={resource.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center justify-between p-3.5 rounded-xl border border-slate-800 bg-slate-900/20 hover:bg-slate-850 hover:border-slate-700 transition-all group"
+                        className="flex items-center justify-between p-3.5 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 hover:border-gray-300 transition-all group"
                       >
                         <div className="flex items-center gap-3 min-w-0">
                           <span className="text-xl">📎</span>
                           <div className="min-w-0">
-                            <p className="font-semibold text-slate-200 text-sm truncate group-hover:text-white">
+                            <p className="font-semibold text-gray-800 text-sm truncate group-hover:text-blue-600">
                               {resource.title || resource.name || "Descargar Recurso"}
                             </p>
                             {resource.description && (
-                              <p className="text-xs text-slate-400 truncate mt-0.5">{resource.description}</p>
+                              <p className="text-xs text-gray-500 truncate mt-0.5">{resource.description}</p>
                             )}
                           </div>
                         </div>
-                        <ExternalLink className="w-4 h-4 text-slate-500 group-hover:text-slate-300 flex-shrink-0" />
+                        <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-gray-600 flex-shrink-0" />
                       </a>
                     ))}
                   </div>
@@ -408,48 +405,48 @@ export default function StudentPreviewPlayer({
         </section>
 
         {/* Right Column: Dynamic Course Index & Lessons */}
-        <aside className="w-full lg:w-96 border-t lg:border-t-0 lg:border-l border-slate-800 bg-slate-900/30 backdrop-blur-md overflow-y-auto">
-          <div className="p-5 border-b border-slate-800 sticky top-0 bg-slate-900/90 z-20">
-            <h3 className="font-bold text-base text-white">Programa de Estudios</h3>
-            <p className="text-xs text-slate-400 mt-1">Explora las clases del curso</p>
+        <aside className="w-full lg:w-96 border-t lg:border-t-0 lg:border-l border-gray-200 bg-white overflow-y-auto">
+          <div className="p-5 border-b border-gray-200 bg-white sticky top-0 z-20">
+            <h3 className="font-bold text-base text-gray-900">Programa de Estudios</h3>
+            <p className="text-xs text-gray-500 mt-1">Explora las clases del curso</p>
           </div>
 
-          <div className="p-3 space-y-2">
+          <div className="p-3 space-y-2 bg-white">
             {course.sections.map((section, sIdx) => {
               const isExpanded = expandedSections.has(section.id);
               const totalSecLessons = section.lessons?.length || 0;
               const freeSecLessons = section.lessons?.filter(l => l.is_free_preview).length || 0;
 
               return (
-                <div key={section.id} className="border border-slate-800/40 rounded-xl overflow-hidden bg-slate-950/20">
+                <div key={section.id} className="border border-gray-200 rounded-xl overflow-hidden bg-white">
                   <button
                     onClick={() => toggleSection(section.id)}
-                    className="w-full flex items-center justify-between p-4 hover:bg-slate-900/30 transition-colors text-left"
+                    className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors text-left"
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
                       {isExpanded ? (
-                        <ChevronDown className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                        <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
                       ) : (
-                        <ChevronRight className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                        <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
                       )}
                       <div className="min-w-0">
-                        <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider block">
+                        <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider block">
                           Módulo {sIdx + 1}
                         </span>
-                        <h4 className="font-bold text-xs sm:text-sm text-slate-200 truncate pr-2">
+                        <h4 className="font-bold text-xs sm:text-sm text-gray-800 truncate pr-2">
                           {section.title}
                         </h4>
                       </div>
                     </div>
                     {freeSecLessons > 0 && (
-                      <Badge className="bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/15 border-indigo-500/20 text-[10px] shrink-0 font-medium py-0.5">
+                      <Badge className="bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-200 text-[10px] shrink-0 font-medium py-0.5">
                         {freeSecLessons} {freeSecLessons === 1 ? "gratis" : "gratis"}
                       </Badge>
                     )}
                   </button>
 
                   {isExpanded && (
-                    <div className="border-t border-slate-800/30 bg-slate-950/40 p-1.5 space-y-1">
+                    <div className="border-t border-gray-150 bg-gray-50/50 p-1.5 space-y-1">
                       {section.lessons?.map((lesson, lIdx) => {
                         const isCurrent = currentLesson?.id === lesson.id;
                         const isFree = lesson.is_free_preview;
@@ -460,36 +457,36 @@ export default function StudentPreviewPlayer({
                             onClick={() => handleLessonClick(lesson)}
                             className={`w-full flex items-start gap-3 p-3 rounded-lg text-left transition-all ${
                               isCurrent
-                                ? "bg-indigo-600/15 border-l-4 border-indigo-500 text-white"
-                                : "hover:bg-slate-900/50 text-slate-300 hover:text-white"
+                                ? "bg-blue-50/80 border-l-4 border-blue-600 text-blue-900"
+                                : "hover:bg-white text-gray-650 hover:text-gray-900"
                             }`}
                           >
                             {isFree ? (
-                              <Play className={`w-4 h-4 mt-0.5 flex-shrink-0 ${isCurrent ? "text-indigo-400" : "text-emerald-400"}`} />
+                              <Play className={`w-4 h-4 mt-0.5 flex-shrink-0 ${isCurrent ? "text-blue-600" : "text-emerald-600"}`} />
                             ) : (
-                              <Lock className="w-4 h-4 mt-0.5 text-slate-500 flex-shrink-0" />
+                              <Lock className="w-4 h-4 mt-0.5 text-gray-400 flex-shrink-0" />
                             )}
 
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center justify-between gap-2">
-                                <p className={`text-xs font-semibold ${isCurrent ? "text-white" : "text-slate-200"}`}>
+                                <p className={`text-xs font-semibold ${isCurrent ? "text-blue-900" : "text-gray-800"}`}>
                                   {lIdx + 1}. {lesson.title}
                                 </p>
                                 {isFree && !isCurrent && (
-                                  <span className="text-[10px] font-bold text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded border border-emerald-400/20 uppercase shrink-0 tracking-wider">
+                                  <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 uppercase shrink-0 tracking-wider">
                                     Gratis
                                   </span>
                                 )}
                               </div>
-                              <div className="flex items-center gap-3 text-[10px] text-slate-400 mt-1">
+                              <div className="flex items-center gap-3 text-[10px] text-gray-500 mt-1">
                                 {lesson.duration_minutes && (
                                   <span className="flex items-center gap-1">
-                                    <Clock className="w-3 h-3 text-slate-500" />
+                                    <Clock className="w-3 h-3 text-gray-400" />
                                     {lesson.duration_minutes} min
                                   </span>
                                 )}
                                 {lesson.has_quiz && (
-                                  <span className="text-amber-500 flex items-center gap-1">
+                                  <span className="text-orange-600 flex items-center gap-1">
                                     • Evaluado
                                   </span>
                                 )}
@@ -499,7 +496,7 @@ export default function StudentPreviewPlayer({
                         );
                       })}
                       {(!section.lessons || section.lessons.length === 0) && (
-                        <p className="text-xs text-slate-500 text-center py-3">Sin lecciones disponibles</p>
+                        <p className="text-xs text-gray-400 text-center py-3">Sin lecciones disponibles</p>
                       )}
                     </div>
                   )}
@@ -510,47 +507,47 @@ export default function StudentPreviewPlayer({
         </aside>
       </main>
 
-      {/* ── PREMIUM LOCKED ACTION DIALOG ──────────────────────────────────────── */}
+      {/* ── CLEAN LOCKED ACTION DIALOG ────────────────────────────────────────── */}
       <Dialog open={showLockDialog} onOpenChange={setShowLockDialog}>
-        <DialogContent className="bg-slate-900 border border-slate-800 text-slate-100 max-w-md p-6 rounded-2xl overflow-hidden">
-          <DialogHeader className="text-center space-y-4">
-            <div className="w-14 h-14 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl flex items-center justify-center mx-auto text-indigo-400 mb-2">
-              <Lock className="w-6 h-6 animate-bounce" />
+        <DialogContent className="bg-white border border-gray-200 text-gray-900 max-w-md p-6 rounded-2xl overflow-hidden shadow-lg">
+          <DialogHeader className="text-center space-y-3">
+            <div className="w-14 h-14 bg-blue-50 border border-blue-100 rounded-2xl flex items-center justify-center mx-auto text-blue-600 mb-1">
+              <Lock className="w-6 h-6" />
             </div>
-            <DialogTitle className="text-2xl font-extrabold text-white tracking-tight">
+            <DialogTitle className="text-xl font-bold text-gray-900 tracking-tight">
               {selectedLockedLesson ? `Desbloquear "${selectedLockedLesson.title}"` : "Acceso Completo al Curso"}
             </DialogTitle>
-            <DialogDescription className="text-slate-400 text-sm leading-relaxed max-w-xs mx-auto">
+            <DialogDescription className="text-gray-500 text-sm leading-relaxed max-w-xs mx-auto">
               Inscríbete hoy mismo y obtén acceso instantáneo a todas las lecciones del curso, incluyendo:
             </DialogDescription>
           </DialogHeader>
 
-          {/* Premium Value Props list */}
-          <div className="my-5 space-y-3.5 bg-slate-950/40 p-4 rounded-xl border border-slate-800/40">
+          {/* Value Props list */}
+          <div className="my-5 space-y-3.5 bg-gray-50 p-4 rounded-xl border border-gray-200">
             <div className="flex items-start gap-3">
-              <ShieldCheck className="w-5 h-5 text-indigo-400 mt-0.5 shrink-0" />
+              <ShieldCheck className="w-5 h-5 text-blue-600 mt-0.5 shrink-0" />
               <div>
-                <p className="text-xs font-bold text-slate-200">Acceso de por vida ilimitado</p>
-                <p className="text-[11px] text-slate-400 mt-0.5">Aprende a tu propio ritmo, desde cualquier dispositivo.</p>
+                <p className="text-xs font-bold text-gray-800">Acceso de por vida ilimitado</p>
+                <p className="text-[11px] text-gray-500 mt-0.5">Aprende a tu propio ritmo, desde cualquier dispositivo.</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
-              <Award className="w-5 h-5 text-indigo-400 mt-0.5 shrink-0" />
+              <Award className="w-5 h-5 text-blue-600 mt-0.5 shrink-0" />
               <div>
-                <p className="text-xs font-bold text-slate-200">Certificación Oficial</p>
-                <p className="text-[11px] text-slate-400 mt-0.5">Recibe tu certificado descargable con validez curricular al completar.</p>
+                <p className="text-xs font-bold text-gray-800">Certificación Oficial</p>
+                <p className="text-[11px] text-gray-500 mt-0.5">Recibe tu certificado descargable con validez curricular al completar.</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
-              <Sparkles className="w-5 h-5 text-indigo-400 mt-0.5 shrink-0" />
+              <Sparkles className="w-5 h-5 text-blue-600 mt-0.5 shrink-0" />
               <div>
-                <p className="text-xs font-bold text-slate-200">Ejercicios y Evaluaciones</p>
-                <p className="text-[11px] text-slate-400 mt-0.5">Pon a prueba tus conocimientos con cuestionarios interactivos.</p>
+                <p className="text-xs font-bold text-gray-800">Ejercicios y Evaluaciones</p>
+                <p className="text-[11px] text-gray-500 mt-0.5">Pon a prueba tus conocimientos con cuestionarios interactivos.</p>
               </div>
             </div>
           </div>
 
-          <div className="space-y-4 pt-2">
+          <div className="space-y-4 pt-1">
             <CoursePurchaseButton
               courseId={course.id}
               price={course.price}
@@ -563,7 +560,7 @@ export default function StudentPreviewPlayer({
             <Button
               variant="ghost"
               onClick={() => setShowLockDialog(false)}
-              className="w-full text-slate-400 hover:text-white hover:bg-slate-800/50 text-xs font-medium py-2 rounded-lg"
+              className="w-full text-gray-500 hover:text-gray-700 hover:bg-gray-100 text-xs font-medium py-2 rounded-lg"
             >
               Seguir explorando clases gratis
             </Button>
