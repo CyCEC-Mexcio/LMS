@@ -709,6 +709,10 @@ export default function UnifiedCourseEditor({
   const [draggedChapter, setDraggedChapter] = useState<string | null>(null);
   const [dragOverChapter, setDragOverChapter] = useState<string | null>(null);
 
+  // Lesson drag and drop state
+  const [draggedLesson, setDraggedLesson] = useState<{ lessonId: string; sectionId: string } | null>(null);
+  const [dragOverLesson, setDragOverLesson] = useState<string | null>(null);
+
   // Delete confirmation state
   const [deleteDialog, setDeleteDialog] = useState<{
     isOpen: boolean;
@@ -1141,6 +1145,82 @@ export default function UnifiedCourseEditor({
 
     setDraggedChapter(null);
     setDragOverChapter(null);
+  };
+
+  // Lesson drag and drop handlers
+  const handleLessonDragStart = (e: React.DragEvent, sectionId: string, lessonId: string) => {
+    e.stopPropagation();
+    setDraggedLesson({ lessonId, sectionId });
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/lesson", lessonId);
+  };
+
+  const handleLessonDragOver = (e: React.DragEvent, lessonId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = "move";
+    setDragOverLesson(lessonId);
+  };
+
+  const handleLessonDragLeave = (e: React.DragEvent) => {
+    e.stopPropagation();
+    setDragOverLesson(null);
+  };
+
+  const handleLessonDrop = async (e: React.DragEvent, sectionId: string, targetLessonId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!draggedLesson || draggedLesson.lessonId === targetLessonId || draggedLesson.sectionId !== sectionId) {
+      setDraggedLesson(null);
+      setDragOverLesson(null);
+      return;
+    }
+
+    const sectionIndex = sections.findIndex((s) => s.id === sectionId);
+    if (sectionIndex === -1) return;
+
+    const lessons = [...(sections[sectionIndex].lessons || [])];
+    const draggedIndex = lessons.findIndex((l: any) => l.id === draggedLesson.lessonId);
+    const targetIndex = lessons.findIndex((l: any) => l.id === targetLessonId);
+
+    if (draggedIndex === -1 || targetIndex === -1) return;
+
+    const [removed] = lessons.splice(draggedIndex, 1);
+    lessons.splice(targetIndex, 0, removed);
+
+    const updatedLessons = lessons.map((lesson: any, index: number) => ({
+      ...lesson,
+      position: index,
+    }));
+
+    const newSections = [...sections];
+    newSections[sectionIndex] = { ...newSections[sectionIndex], lessons: updatedLessons };
+    setSections(newSections);
+
+    try {
+      const updates = updatedLessons.map((lesson: any) =>
+        supabase
+          .from("lessons")
+          .update({ position: lesson.position })
+          .eq("id", lesson.id)
+      );
+
+      await Promise.all(updates);
+      router.refresh();
+    } catch (error) {
+      console.error("Error updating lesson positions:", error);
+      toast.error("Error al reordenar lecciones");
+      fetchCourseData();
+    }
+
+    setDraggedLesson(null);
+    setDragOverLesson(null);
+  };
+
+  const handleLessonDragEnd = () => {
+    setDraggedLesson(null);
+    setDragOverLesson(null);
   };
 
   const handleAddLesson = (sectionId: string) => {
@@ -2848,12 +2928,19 @@ export default function UnifiedCourseEditor({
                               (lesson: any, lessonIndex: number) => (
                                 <div
                                   key={lesson.id}
-                                  className="flex items-center justify-between p-2.5 bg-background rounded-md border border-border hover:border-sky-300 hover:shadow-sm cursor-pointer transition-all group/lesson"
+                                  draggable
+                                  onDragStart={(e) => handleLessonDragStart(e, section.id, lesson.id)}
+                                  onDragOver={(e) => handleLessonDragOver(e, lesson.id)}
+                                  onDragLeave={handleLessonDragLeave}
+                                  onDrop={(e) => handleLessonDrop(e, section.id, lesson.id)}
+                                  onDragEnd={handleLessonDragEnd}
+                                  className={`flex items-center justify-between p-2.5 bg-background rounded-md border border-border hover:border-sky-300 hover:shadow-sm cursor-grab active:cursor-grabbing transition-all group/lesson ${dragOverLesson === lesson.id ? "border-t-2 border-t-sky-500" : ""}`}
                                   onClick={() =>
                                     handleEditLesson(section.id, lesson.id)
                                   }
                                 >
                                   <div className="flex items-center gap-2.5 flex-1">
+                                    <GripVertical className="w-3.5 h-3.5 text-muted-foreground opacity-50 group-hover/lesson:opacity-100 transition-opacity flex-shrink-0" />
                                     <span className="text-xs font-mono text-muted-foreground w-4 text-right">
                                       {lessonIndex + 1}.
                                     </span>
@@ -2918,7 +3005,7 @@ export default function UnifiedCourseEditor({
                 <div className="flex items-center justify-center gap-2 mt-5 pt-4 border-t border-border">
                   <GripVertical className="w-3.5 h-3.5 text-muted-foreground/50" />
                   <p className="text-xs text-muted-foreground">
-                    Arrastra los capítulos para reordenarlos
+                    Arrastra los capítulos y lecciones para reordenarlos
                   </p>
                 </div>
               )}
