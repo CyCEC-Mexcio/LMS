@@ -138,26 +138,18 @@ function LearningOutcomesEditor({
   isEditing: boolean;
   onEditToggle: () => void;
 }) {
-  const [localOutcomes, setLocalOutcomes] = useState<string[]>(outcomes);
-  const [newOutcome, setNewOutcome] = useState("");
+  const [text, setText] = useState<string>(outcomes.join("\n"));
 
   useEffect(() => {
-    setLocalOutcomes(outcomes);
+    setText(outcomes.join("\n"));
   }, [outcomes]);
 
-  const handleAdd = () => {
-    if (newOutcome.trim()) {
-      setLocalOutcomes([...localOutcomes, newOutcome.trim()]);
-      setNewOutcome("");
-    }
-  };
-
-  const handleRemove = (index: number) => {
-    setLocalOutcomes(localOutcomes.filter((_, i) => i !== index));
-  };
-
   const handleSave = () => {
-    onUpdate(localOutcomes);
+    const updated = text
+      .split("\n")
+      .map((item) => item.trim())
+      .filter((item) => item.length > 0);
+    onUpdate(updated);
     onEditToggle();
   };
 
@@ -194,58 +186,27 @@ function LearningOutcomesEditor({
 
   return (
     <div className="bg-card rounded-lg border border-border p-5">
-      <h3 className="text-sm font-medium text-muted-foreground mb-4">
+      <h3 className="text-sm font-medium text-muted-foreground mb-1">
         Lo que aprenderás
       </h3>
+      <p className="text-xs text-muted-foreground mb-3">
+        Escribe la descripción de lo que aprenderá el estudiante (puedes ingresar un objetivo por línea).
+      </p>
 
-      <div className="space-y-3 mb-4">
-        {localOutcomes.map((outcome, index) => (
-          <div key={index} className="flex items-start gap-2">
-            <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0 mt-2" />
-            <Input
-              value={outcome}
-              onChange={(e) => {
-                const updated = [...localOutcomes];
-                updated[index] = e.target.value;
-                setLocalOutcomes(updated);
-              }}
-              className="flex-1"
-            />
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => handleRemove(index)}
-              className="text-red-600"
-            >
-              <X className="w-4 h-4" />
-            </Button>
-          </div>
-        ))}
-      </div>
-
-      <div className="flex gap-2 mb-4">
-        <Input
-          value={newOutcome}
-          onChange={(e) => setNewOutcome(e.target.value)}
-          placeholder="Agregar nuevo objetivo..."
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              handleAdd();
-            }
-          }}
-        />
-        <Button onClick={handleAdd} variant="outline">
-          <Plus className="w-4 h-4" />
-        </Button>
-      </div>
+      <Textarea
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        placeholder="Ej: Manejo de plataforma SIRCE STPS&#10;Cumplimiento de requisitos normativos&#10;Generación de constancias DC-3"
+        rows={6}
+        className="mb-4 text-sm resize-y"
+      />
 
       <div className="flex gap-2">
         <Button onClick={handleSave}>Guardar</Button>
         <Button
           variant="outline"
           onClick={() => {
-            setLocalOutcomes(outcomes);
+            setText(outcomes.join("\n"));
             onEditToggle();
           }}
         >

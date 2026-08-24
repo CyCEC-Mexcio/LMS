@@ -116,6 +116,13 @@ function LoginForm() {
 
         <div className="w-full max-w-md bg-white/[0.06] backdrop-blur-sm border border-white/10 rounded-3xl p-8 lg:p-10 shadow-2xl shadow-black/30">
           
+          {/* Inactivity auto-logout notice */}
+          {searchParams.get("reason") === "inactivity" && (
+            <div className="mb-5 bg-amber-500/10 border border-amber-400/25 text-amber-300 px-4 py-3 rounded-xl text-sm text-center">
+              Tu sesión se cerró por inactividad. Inicia sesión de nuevo para continuar.
+            </div>
+          )}
+
           {/* Heading */}
           <div className="mb-8">
             <h1 className="text-white text-2xl font-bold tracking-tight mb-1">

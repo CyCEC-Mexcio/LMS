@@ -1,17 +1,17 @@
-// app/(platform)/teacher/analytics/page.tsx
 import { createClient } from "@/lib/supabase/server";
 import { getUserProfile } from "@/lib/auth-utils";
 import { redirect } from "next/navigation";
-import { cookies } from "next/headers";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   TrendingUp,
   Users,
   DollarSign,
-  Eye,
   Star,
   BookOpen,
+  Mail,
+  GraduationCap,
 } from "lucide-react";
 
 export default async function TeacherAnalyticsPage() {
@@ -65,6 +65,71 @@ export default async function TeacherAnalyticsPage() {
       </div>
     );
   }
+
+  // Fetch detailed student enrollments across all published courses of this teacher
+  const courseIds = courses.map((c) => c.id);
+  const { data: studentEnrollments } = await supabase
+    .from("enrollments")
+    .select(`
+      id,
+      purchased_at,
+      student_id,
+      course_id,
+      student:profiles!student_id (
+        id,
+        full_name,
+        email,
+        avatar_url
+      ),
+      course:courses!course_id (
+        id,
+        title
+      )
+    `)
+    .in("course_id", courseIds.length ? courseIds : ["none"])
+    .order("purchased_at", { ascending: false });
+
+  // Calculate detailed progress for each student enrollment
+  const studentProgressList = await Promise.all(
+    (studentEnrollments ?? []).map(async (e: any) => {
+      const { data: sections } = await supabase
+        .from("sections")
+        .select("id, lessons(id)")
+        .eq("course_id", e.course_id);
+
+      const lessonIds = (sections ?? []).flatMap((s: any) =>
+        (s.lessons ?? []).map((l: any) => l.id)
+      );
+
+      let completedLessons = 0;
+      if (lessonIds.length > 0) {
+        const { data: done } = await supabase
+          .from("progress")
+          .select("lesson_id")
+          .eq("student_id", e.student_id)
+          .eq("is_completed", true)
+          .in("lesson_id", lessonIds);
+
+        completedLessons = done?.length || 0;
+      }
+
+      const totalLessons = lessonIds.length;
+      const progressPct =
+        totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+
+      return {
+        id: e.id,
+        studentName: e.student?.full_name || "Estudiante",
+        studentEmail: e.student?.email || "",
+        studentAvatar: e.student?.avatar_url || null,
+        courseTitle: e.course?.title || "Curso",
+        purchasedAt: e.purchased_at,
+        completedLessons,
+        totalLessons,
+        progressPct,
+      };
+    })
+  );
 
   // Calculate overall statistics
   const totalEnrollments = courses.reduce(
@@ -363,6 +428,105 @@ export default async function TeacherAnalyticsPage() {
               </tbody>
             </table>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Student Progress & Direct Follow-up Email */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <GraduationCap className="w-5 h-5 text-[#C4161C]" />
+            Progreso y Seguimiento de Estudiantes
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {studentProgressList.length === 0 ? (
+            <p className="text-sm text-gray-500 text-center py-8">
+              Aún no hay estudiantes inscritos en tus cursos.
+            </p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b bg-gray-50">
+                    <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 uppercase">Estudiante</th>
+                    <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 uppercase">Curso</th>
+                    <th className="text-center py-3 px-4 text-xs font-semibold text-gray-600 uppercase">Progreso</th>
+                    <th className="text-center py-3 px-4 text-xs font-semibold text-gray-600 uppercase">Estado</th>
+                    <th className="text-center py-3 px-4 text-xs font-semibold text-gray-600 uppercase">Contacto</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {studentProgressList.map((st) => {
+                    const mailSubject = encodeURIComponent(`Seguimiento del curso: ${st.courseTitle}`);
+                    const mailBody = encodeURIComponent(
+                      `Hola ${st.studentName},\n\nNoté que estás inscrito en el curso "${st.courseTitle}" y tu avance actual es del ${st.progressPct}%.\n\nQuisiera saber si tienes alguna duda o te has atorado en alguna lección para ayudarte a continuar.\n\n¡Saludos!`
+                    );
+                    const mailtoUrl = st.studentEmail ? `mailto:${st.studentEmail}?subject=${mailSubject}&body=${mailBody}` : null;
+
+                    return (
+                      <tr key={st.id} className="border-b hover:bg-gray-50 transition-colors">
+                        <td className="py-4 px-4">
+                          <div className="flex items-center gap-3">
+                            {st.studentAvatar ? (
+                              <img src={st.studentAvatar} alt={st.studentName} className="w-9 h-9 rounded-full object-cover border" />
+                            ) : (
+                              <div className="w-9 h-9 rounded-full bg-red-100 flex items-center justify-center text-[#C4161C] font-bold text-sm">
+                                {st.studentName[0]?.toUpperCase() || "?"}
+                              </div>
+                            )}
+                            <div>
+                              <p className="font-semibold text-sm text-gray-900">{st.studentName}</p>
+                              {st.studentEmail && (
+                                <p className="text-xs text-gray-500 font-medium">{st.studentEmail}</p>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-4 px-4 text-sm font-medium text-gray-800">
+                          {st.courseTitle}
+                        </td>
+                        <td className="py-4 px-4 text-center">
+                          <div className="w-36 mx-auto space-y-1">
+                            <div className="flex justify-between text-xs text-gray-600">
+                              <span>{st.completedLessons}/{st.totalLessons} lecciones</span>
+                              <span className="font-bold text-[#C4161C]">{st.progressPct}%</span>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div className="bg-[#C4161C] h-2 rounded-full transition-all" style={{ width: `${st.progressPct}%` }} />
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-4 px-4 text-center">
+                          {st.progressPct === 100 ? (
+                            <Badge className="bg-green-100 text-green-800 border-green-200">Completado</Badge>
+                          ) : st.progressPct >= 40 ? (
+                            <Badge className="bg-blue-100 text-blue-800 border-blue-200">En Progreso</Badge>
+                          ) : st.progressPct > 0 ? (
+                            <Badge className="bg-amber-100 text-amber-800 border-amber-200">En Riesgo (&lt;40%)</Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-gray-500">Sin Iniciar</Badge>
+                          )}
+                        </td>
+                        <td className="py-4 px-4 text-center">
+                          {mailtoUrl ? (
+                            <a href={mailtoUrl} className="inline-block">
+                              <Button size="sm" variant="outline" className="gap-1.5 text-xs text-[#C4161C] border-red-200 hover:bg-red-50">
+                                <Mail size={13} />
+                                Enviar Correo
+                              </Button>
+                            </a>
+                          ) : (
+                            <span className="text-xs text-gray-400">Sin correo</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </CardContent>
       </Card>
 

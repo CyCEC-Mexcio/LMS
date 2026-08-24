@@ -26,26 +26,45 @@ export function Header() {
   }, [])
 
   useEffect(() => {
+    // Fail-safe: if auth check takes > 3s (stale session, network issue),
+    // stop loading and show the "Acceder" button instead of spinning forever.
+    const AUTH_TIMEOUT_MS = 3000
+    let authTimedOut = false
+    const authTimer = setTimeout(() => {
+      authTimedOut = true
+      setUser(null)
+      setProfile(null)
+      setLoading(false)
+    }, AUTH_TIMEOUT_MS)
+
     const getUser = async () => {
       try {
         const { data: { user }, error } = await supabase.auth.getUser()
+        if (authTimedOut) return // Timer already fired, ignore late response
+        clearTimeout(authTimer)
+
         if (error) { setUser(null); setProfile(null); setLoading(false); return }
         setUser(user)
         if (user) {
           const { data: profileData } = await supabase
             .from("profiles").select("role, full_name").eq("id", user.id).single()
-          setProfile(profileData)
+          if (!authTimedOut) setProfile(profileData)
         }
       } catch (err) {
         console.error("Error in getUser:", err)
       } finally {
-        setLoading(false)
+        if (!authTimedOut) setLoading(false)
       }
     }
 
     getUser()
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === "SIGNED_OUT") {
+        setUser(null)
+        setProfile(null)
+        return
+      }
       setUser(session?.user ?? null)
       if (session?.user) {
         const { data: profileData } = await supabase
@@ -56,7 +75,10 @@ export function Header() {
       }
     })
 
-    return () => { subscription.unsubscribe() }
+    return () => {
+      clearTimeout(authTimer)
+      subscription.unsubscribe()
+    }
   }, [])
 
   const handleLogout = async () => {

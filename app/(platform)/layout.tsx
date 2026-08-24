@@ -2,6 +2,7 @@ import { getUserProfile } from "@/lib/auth-utils";
 import { redirect } from "next/navigation";
 import PlatformNavbar from "@/components/layouts/platform-navbar";
 import PlatformSidebar from "@/components/layouts/platform-sidebar";
+import { SessionGuard } from "@/components/session-guard";
 
 export default async function PlatformLayout({
   children,
@@ -15,19 +16,21 @@ export default async function PlatformLayout({
   }
 
   return (
-    <div className="h-screen flex flex-col">
-      {/* Top Navbar */}
-      <PlatformNavbar/>
+    <SessionGuard>
+      <div className="h-screen flex flex-col">
+        {/* Top Navbar */}
+        <PlatformNavbar/>
 
-      <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar */}
-        <PlatformSidebar profile={profile} />
+        <div className="flex flex-1 overflow-hidden">
+          {/* Sidebar */}
+          <PlatformSidebar profile={profile} />
 
-        {/* Main Content */}
-        <main className="flex-1 overflow-y-auto bg-gray-50 p-6">
-          {children}
-        </main>
+          {/* Main Content */}
+          <main className="flex-1 overflow-y-auto bg-gray-50 p-6">
+            {children}
+          </main>
+        </div>
       </div>
-    </div>
+    </SessionGuard>
   );
-}
+}

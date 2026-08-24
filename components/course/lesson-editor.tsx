@@ -1748,6 +1748,34 @@ function QuizQuestionEditor({
   onUpdate: (updates: Partial<QuizQuestion>) => void;
   onDelete: () => void;
 }) {
+  const addOption = () => {
+    const currentOptions = question.options || [];
+    if (currentOptions.length >= 10) return;
+    const newOptions = [...currentOptions, ""];
+    onUpdate({ options: newOptions });
+  };
+
+  const removeOption = (indexToRemove: number) => {
+    const currentOptions = question.options || [];
+    if (currentOptions.length <= 2) return;
+    
+    const removedValue = currentOptions[indexToRemove];
+    const newOptions = currentOptions.filter((_, i) => i !== indexToRemove);
+
+    let newCorrectAnswer = question.correct_answer;
+    if (question.question_type === "single_choice") {
+      if (question.correct_answer === removedValue) {
+        newCorrectAnswer = "";
+      }
+    } else if (question.question_type === "multiple_choice") {
+      if (Array.isArray(question.correct_answer)) {
+        newCorrectAnswer = question.correct_answer.filter(ans => ans !== removedValue);
+      }
+    }
+
+    onUpdate({ options: newOptions, correct_answer: newCorrectAnswer });
+  };
+
   const toggleMultipleChoice = (option: string) => {
     const currentAnswers = Array.isArray(question.correct_answer) 
       ? question.correct_answer 
@@ -1791,12 +1819,15 @@ function QuizQuestionEditor({
             // Reset correct_answer based on type
             if (value === "multiple_choice") {
               updates.correct_answer = [];
+              if (!question.options || question.options.length < 2) {
+                updates.options = ["", "", "", ""];
+              }
             } else if (value === "true_false") {
               updates.correct_answer = "";
               updates.options = ["Verdadero", "Falso"];
             } else {
               updates.correct_answer = "";
-              if (value === "single_choice" && question.options.length === 2) {
+              if (!question.options || question.options.length < 2) {
                 updates.options = ["", "", "", ""];
               }
             }
@@ -1816,11 +1847,17 @@ function QuizQuestionEditor({
 
         {(question.question_type === "single_choice" || question.question_type === "multiple_choice") && (
           <div className="space-y-2">
-            <Label className="text-sm text-gray-600">
-              {question.question_type === "multiple_choice" 
-                ? "Opciones (selecciona todas las correctas)"
-                : "Opciones (selecciona la correcta)"}
-            </Label>
+            <div className="flex items-center justify-between">
+              <Label className="text-sm text-gray-600">
+                {question.question_type === "multiple_choice" 
+                  ? "Opciones (selecciona todas las correctas)"
+                  : "Opciones (selecciona la correcta)"}
+              </Label>
+              <span className="text-xs text-gray-500">
+                {question.options?.length || 0} / 10 opciones
+              </span>
+            </div>
+
             {question.options?.map((option, optIndex) => (
               <div key={optIndex} className="flex gap-2 items-center">
                 {question.question_type === "single_choice" ? (
@@ -1878,8 +1915,37 @@ function QuizQuestionEditor({
                   placeholder={`Opción ${optIndex + 1}`}
                   className="flex-1"
                 />
+
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  disabled={(question.options?.length || 0) <= 2}
+                  onClick={() => removeOption(optIndex)}
+                  className="text-gray-400 hover:text-red-600 disabled:opacity-30 flex-shrink-0"
+                  title={(question.options?.length || 0) <= 2 ? "Mínimo 2 opciones requeridas" : "Eliminar opción"}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
               </div>
             ))}
+
+            {(question.options?.length || 0) < 10 ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={addOption}
+                className="mt-2 w-full text-xs flex items-center justify-center gap-1"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Agregar Opción ({question.options?.length || 0}/10)
+              </Button>
+            ) : (
+              <p className="text-xs text-amber-600 text-center mt-1">
+                Límite máximo alcanzado (10 opciones).
+              </p>
+            )}
           </div>
         )}
 

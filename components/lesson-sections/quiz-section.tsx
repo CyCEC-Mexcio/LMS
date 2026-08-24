@@ -414,10 +414,14 @@ function QuestionCard({
                   )}
                 </div>
               ))}
-              <Button onClick={onAddOption} variant="outline" size="sm" className="w-full">
-                <Plus className="w-4 h-4 mr-1" />
-                Add Option
-              </Button>
+              {question.options.length < 10 ? (
+                <Button onClick={onAddOption} variant="outline" size="sm" className="w-full">
+                  <Plus className="w-4 h-4 mr-1" />
+                  Add Option ({question.options.length}/10)
+                </Button>
+              ) : (
+                <p className="text-xs text-amber-600 text-center">Maximum limit of 10 options reached.</p>
+              )}
               <p className="text-xs text-gray-500">
                 {question.allow_multiple
                   ? "Check all correct answers"

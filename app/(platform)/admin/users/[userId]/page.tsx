@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import {
   ArrowLeft, Calendar, BookOpen, Award, DollarSign,
   Users as UsersIcon, Upload, Save, Percent,
-  CheckCircle2, AlertCircle, Loader2, Pencil, X,
+  CheckCircle2, AlertCircle, Loader2, Pencil, X, Mail,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -302,7 +302,7 @@ export default function UserDetailsPage() {
                 )}
               </div>
 
-              {/* Edit / Save buttons */}
+              {/* Edit / Save / Contact buttons */}
               <div className="flex-shrink-0 flex gap-2">
                 {editMode ? (
                   <>
@@ -315,9 +315,21 @@ export default function UserDetailsPage() {
                     </Button>
                   </>
                 ) : (
-                  <Button variant="outline" onClick={() => setEditMode(true)} className="gap-1.5">
-                    <Pencil size={14} /> Editar perfil
-                  </Button>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {profile.email && (
+                      <a
+                        href={`mailto:${profile.email}?subject=Contacto%20de%20administraci%C3%B3n%20-%20CyCEC%20M%C3%A9xico`}
+                        className="inline-block"
+                      >
+                        <Button variant="outline" className="gap-1.5 text-gray-700 hover:text-[#C4161C] border-gray-200">
+                          <Mail size={14} className="text-[#C4161C]" /> Contactar por Correo
+                        </Button>
+                      </a>
+                    )}
+                    <Button variant="outline" onClick={() => setEditMode(true)} className="gap-1.5">
+                      <Pencil size={14} /> Editar perfil
+                    </Button>
+                  </div>
                 )}
               </div>
             </div>
@@ -400,6 +412,16 @@ export default function UserDetailsPage() {
                             <Calendar className="w-3 h-3" />
                             {new Date(e.purchased_at).toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" })}
                           </p>
+                          {profile.email && (
+                            <a
+                              href={`mailto:${profile.email}?subject=${encodeURIComponent(`Seguimiento del curso: ${e.courses.title}`)}&body=${encodeURIComponent(`Hola ${profile.full_name || 'estudiante'},\n\nTe contacto sobre tu avance en "${e.courses.title}" (${e.progress}% completado).\n\n¿Tienes alguna duda o necesitas apoyo para continuar?\n\n¡Saludos!`)}`}
+                              className="block w-full pt-2"
+                            >
+                              <Button size="sm" variant="outline" className="w-full text-xs text-[#C4161C] border-red-200 hover:bg-red-50 gap-1.5">
+                                <Mail size={13} /> Enviar Correo de Seguimiento
+                              </Button>
+                            </a>
+                          )}
                         </div>
                       </div>
                     ))}

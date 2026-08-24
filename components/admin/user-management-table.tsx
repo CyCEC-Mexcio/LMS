@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,7 +14,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { UserX, Eye } from 'lucide-react'
+import { UserX, Eye, Mail, Search } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -21,15 +22,19 @@ import { useRouter } from 'next/navigation'
 interface UserManagementTableProps {
   users: any[]
   currentUserId: string
+  activeRole?: string
 }
 
-export default function UserManagementTable({ users, currentUserId }: UserManagementTableProps) {
+export default function UserManagementTable({ users, currentUserId, activeRole = 'all' }: UserManagementTableProps) {
   const supabase = createClient()
   const router = useRouter()
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [userToDelete, setUserToDelete] = useState<any>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Local search filter
+  const [searchTerm, setSearchTerm] = useState('')
 
   function handleDeleteClick(user: any) {
     setUserToDelete(user)
@@ -44,19 +49,13 @@ export default function UserManagementTable({ users, currentUserId }: UserManage
     setError(null)
     
     try {
-      console.log('Starting deletion for user:', userToDelete.id)
-
-      // Check if user has any active enrollments (for students)
       if (userToDelete.role === 'student') {
         const { count, error: countError } = await supabase
           .from('enrollments')
           .select('*', { count: 'exact', head: true })
           .eq('student_id', userToDelete.id)
 
-        if (countError) {
-          console.error('Error checking enrollments:', countError)
-          throw new Error('Error al verificar inscripciones')
-        }
+        if (countError) throw new Error('Error al verificar inscripciones')
 
         if (count && count > 0) {
           setError('No se puede eliminar un estudiante con cursos activos')
@@ -65,17 +64,13 @@ export default function UserManagementTable({ users, currentUserId }: UserManage
         }
       }
 
-      // Check if user has created courses (for teachers)
       if (userToDelete.role === 'teacher') {
         const { count, error: countError } = await supabase
           .from('courses')
           .select('*', { count: 'exact', head: true })
           .eq('teacher_id', userToDelete.id)
 
-        if (countError) {
-          console.error('Error checking courses:', countError)
-          throw new Error('Error al verificar cursos')
-        }
+        if (countError) throw new Error('Error al verificar cursos')
 
         if (count && count > 0) {
           setError('No se puede eliminar un instructor con cursos creados')
@@ -84,47 +79,79 @@ export default function UserManagementTable({ users, currentUserId }: UserManage
         }
       }
 
-      // OPTION 1: Use the database function (if you created it)
-      // Uncomment this and comment out OPTION 2 if you want to delete auth.users too
-      /*
-      const { error: deleteError } = await supabase.rpc('delete_user_and_auth', {
-        user_id: userToDelete.id
-      })
-      */
-
-      // OPTION 2: Delete only profile (auth.users remains)
       const { error: deleteError } = await supabase
         .from('profiles')
         .delete()
         .eq('id', userToDelete.id)
 
-      if (deleteError) {
-        console.error('Delete error:', deleteError)
-        throw new Error(deleteError.message || 'Error al eliminar usuario')
-      }
+      if (deleteError) throw new Error(deleteError.message || 'Error al eliminar usuario')
 
-      console.log('User deleted successfully')
-      
-      // Close dialog
       setDeleteDialogOpen(false)
       setUserToDelete(null)
-      
-      // Refresh the page data
       router.refresh()
-      
-      // Optional: Show success message
       alert('Usuario eliminado exitosamente')
-      
     } catch (error: any) {
       console.error('Error deleting user:', error)
-      setError(error.message || 'Error desconocido al eliminar usuario')
+      setError(error.message || 'Error al eliminar usuario')
     } finally {
       setLoading(false)
     }
   }
 
+  const filteredUsers = users.filter((user) => {
+    if (!searchTerm.trim()) return true;
+    const term = searchTerm.toLowerCase();
+    const nameMatch = user.full_name?.toLowerCase().includes(term);
+    const emailMatch = user.email?.toLowerCase().includes(term);
+    return nameMatch || emailMatch;
+  });
+
+  const handleRoleTabChange = (role: string) => {
+    if (role === 'all') {
+      router.push('/admin/users');
+    } else {
+      router.push(`/admin/users?role=${role}`);
+    }
+  };
+
   return (
     <>
+      {/* Search and Role Filter Bar */}
+      <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6 pb-4 border-b">
+        {/* Role Tabs */}
+        <div className="flex items-center bg-gray-100 p-1 rounded-lg w-full sm:w-auto">
+          {[
+            { id: 'all', label: 'Todos' },
+            { id: 'student', label: 'Estudiantes' },
+            { id: 'teacher', label: 'Instructores' },
+            { id: 'admin', label: 'Admin' },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => handleRoleTabChange(tab.id)}
+              className={`px-4 py-1.5 text-xs font-semibold rounded-md transition-all ${
+                activeRole === tab.id
+                  ? 'bg-white text-[#C4161C] shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Search Input */}
+        <div className="relative w-full sm:w-72">
+          <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+          <Input
+            placeholder="Buscar por nombre o correo..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-9 text-sm"
+          />
+        </div>
+      </div>
+
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
@@ -137,7 +164,7 @@ export default function UserManagementTable({ users, currentUserId }: UserManage
             </tr>
           </thead>
           <tbody>
-            {users.map((user: any) => (
+            {filteredUsers.map((user: any) => (
               <tr key={user.id} className="border-b hover:bg-gray-50 transition-colors">
                 <td className="py-5 px-6">
                   <div className="flex items-center gap-4">
@@ -148,8 +175,8 @@ export default function UserManagementTable({ users, currentUserId }: UserManage
                         className="w-14 h-14 rounded-full object-cover border-2 border-gray-200"
                       />
                     ) : (
-                      <div className="w-14 h-14 rounded-full bg-blue-100 flex items-center justify-center border-2 border-blue-200">
-                        <span className="text-blue-600 font-bold text-xl">
+                      <div className="w-14 h-14 rounded-full bg-red-100 flex items-center justify-center border-2 border-red-200">
+                        <span className="text-[#C4161C] font-bold text-xl">
                           {user.full_name?.[0]?.toUpperCase() || "?"}
                         </span>
                       </div>
@@ -158,7 +185,10 @@ export default function UserManagementTable({ users, currentUserId }: UserManage
                       <p className="font-semibold text-base text-gray-900">
                         {user.full_name || "Sin nombre"}
                       </p>
-                      <p className="text-sm text-gray-500 truncate max-w-[250px] font-mono">
+                      {user.email && (
+                        <p className="text-xs text-gray-600 font-medium">{user.email}</p>
+                      )}
+                      <p className="text-xs text-gray-400 truncate max-w-[250px] font-mono mt-0.5">
                         ID: {user.id.slice(0, 8)}...
                       </p>
                     </div>
@@ -205,7 +235,23 @@ export default function UserManagementTable({ users, currentUserId }: UserManage
                   })}
                 </td>
                 <td className="text-center py-5 px-6">
-                  <div className="flex items-center justify-center gap-3">
+                  <div className="flex items-center justify-center gap-2 flex-wrap">
+                    {user.email && (
+                      <a
+                        href={`mailto:${user.email}?subject=Contacto%20desde%20CyCEC%20M%C3%A9xico&body=Hola%20${encodeURIComponent(user.full_name || 'estudiante')},`}
+                        className="inline-block"
+                      >
+                        <Button
+                          size="default"
+                          variant="outline"
+                          className="font-medium text-gray-700 hover:text-[#C4161C] hover:bg-red-50 border-gray-200"
+                          title="Enviar correo"
+                        >
+                          <Mail className="w-4 h-4 mr-1.5 text-red-600" />
+                          Correo
+                        </Button>
+                      </a>
+                    )}
                     <Link href={`/admin/users/${user.id}`}>
                       <Button
                         size="default"

@@ -47,13 +47,21 @@ export default function PlatformSidebar({ profile }: { profile: Profile }) {
     }
   }
 
+  // Find the single active item that best matches the current pathname
+  const activeItem = visibleItems
+    .filter((item) => {
+      if (pathname === item.href) return true;
+      return pathname.startsWith(item.href + "/");
+    })
+    .sort((a, b) => b.href.length - a.href.length)[0];
+
   return (
     <aside className="w-64 bg-white border-r border-gray-200 overflow-y-auto">
       <div className="p-4 space-y-1">
         {/* Role Badge */}
-        <div className="mb-4 px-3 py-2 bg-blue-50 rounded-lg">
-          <p className="text-xs text-gray-600">Rol Actual</p>
-          <p className="text-sm font-semibold text-blue-600 capitalize">
+        <div className="mb-4 px-3 py-2 bg-red-50/80 border border-red-100 rounded-lg">
+          <p className="text-xs text-gray-500 font-medium">Rol Actual</p>
+          <p className="text-sm font-semibold text-[#C4161C] capitalize">
             {profile.role === "student" && "Estudiante"}
             {profile.role === "teacher" && "Instructor"}
             {profile.role === "admin" && "Administrador"}
@@ -74,9 +82,7 @@ export default function PlatformSidebar({ profile }: { profile: Profile }) {
             )}
 
             {items.map((item) => {
-              const isActive =
-                pathname === item.href ||
-                (item.href !== "/browse" && pathname.startsWith(item.href + "/"));
+              const isActive = activeItem?.href === item.href;
 
               return (
                 <Link
@@ -85,7 +91,7 @@ export default function PlatformSidebar({ profile }: { profile: Profile }) {
                   className={cn(
                     "flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors",
                     isActive
-                      ? "bg-blue-50 text-blue-600 font-medium"
+                      ? "bg-red-50 text-[#C4161C] font-semibold"
                       : "text-gray-700 hover:bg-gray-100"
                   )}
                 >

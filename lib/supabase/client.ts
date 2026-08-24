@@ -8,4 +8,13 @@ export const createClient = () =>
   createBrowserClient(
     supabaseUrl!,
     supabaseKey!,
+    {
+      cookieOptions: {
+        // Session-only cookies: the browser deletes them when ALL tabs/windows
+        // of the browser are closed. This gives us "logout on close" for free
+        // with zero API calls. The maxAge of 0 tells @supabase/ssr to omit
+        // the Expires/Max-Age directive, making them true session cookies.
+        maxAge: 0,
+      },
+    }
   );

@@ -130,9 +130,9 @@ export default async function CourseDetailPage({
       />
     ) : (
       <div
-        className={`${sizeClass} rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0`}
+        className={`${sizeClass} rounded-full bg-red-100 flex items-center justify-center flex-shrink-0`}
       >
-        <span className="font-bold text-blue-600">
+        <span className="font-bold text-red-700">
           {instructorDisplayName.charAt(0).toUpperCase()}
         </span>
       </div>
@@ -142,7 +142,7 @@ export default async function CourseDetailPage({
   return (
     <div className="min-h-screen bg-gray-50">
       {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white">
+      <div className="bg-gradient-to-r from-[#700B0E] via-[#8E0F14] to-[#C4161C] text-white shadow-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Left: Course info */}
@@ -151,14 +151,14 @@ export default async function CourseDetailPage({
                 {course.category}
               </Badge>
               <h1 className="text-4xl font-bold mb-4">{course.title}</h1>
-              <p className="text-lg text-blue-100 mb-6">{course.description}</p>
+              <p className="text-lg text-red-100 mb-6">{course.description}</p>
 
               <div className="flex flex-wrap gap-6 items-center mb-6">
                 {reviews.length > 0 && (
                   <div className="flex items-center gap-2">
                     <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
                     <span className="font-semibold">{averageRating.toFixed(1)}</span>
-                    <span className="text-blue-200">({reviews.length} reseñas)</span>
+                    <span className="text-red-200">({reviews.length} reseñas)</span>
                   </div>
                 )}
                 <div className="flex items-center gap-2">
@@ -175,10 +175,10 @@ export default async function CourseDetailPage({
               <div className="flex items-center gap-3">
                 <InstructorAvatar size="sm" />
                 <div>
-                  <p className="text-sm text-blue-200">Creado por</p>
+                  <p className="text-sm text-red-200">Creado por</p>
                   <p className="font-semibold">{instructorDisplayName}</p>
                   {course.organization && (
-                    <p className="text-sm text-blue-200">{course.organization}</p>
+                    <p className="text-sm text-red-200">{course.organization}</p>
                   )}
                 </div>
               </div>
@@ -323,7 +323,7 @@ export default async function CourseDetailPage({
                                   </span>
                                   {lesson.is_free_preview && (
                                     <Link href={`/browse/${slug}/preview/${lesson.id}`}>
-                                      <Badge variant="outline" className="text-xs cursor-pointer hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-colors">
+                                      <Badge variant="outline" className="text-xs cursor-pointer hover:bg-red-50 hover:border-red-300 hover:text-red-700 transition-colors">
                                         ▶ Vista previa
                                       </Badge>
                                     </Link>
@@ -355,7 +355,7 @@ export default async function CourseDetailPage({
                       {instructorDisplayName}
                     </h3>
                     {course.organization && (
-                      <p className="text-sm text-blue-600 font-medium mb-3">
+                      <p className="text-sm text-red-700 font-medium mb-3">
                         {course.organization}
                       </p>
                     )}
