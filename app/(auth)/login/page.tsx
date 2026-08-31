@@ -8,17 +8,18 @@ import { ArrowLeft, ArrowRight, Eye, EyeOff, GraduationCap, Award, BadgeCheck } 
 import Image from "next/image";
 
 function LoginForm() {
-  const [email, setEmail] = useState("");
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const explicitRedirect = searchParams.get("redirect");
+  const emailParam = searchParams.get("email") || "";
+  const supabase = createClient();
+
+  const [email, setEmail] = useState(emailParam);
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [step, setStep] = useState<"email" | "password">("email");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const explicitRedirect = searchParams.get("redirect");
-  const supabase = createClient();
 
   const handleContinue = (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,10 +37,15 @@ function LoginForm() {
       setError(error.message === "Invalid login credentials" ? "Correo o contraseña incorrectos." : error.message);
       setLoading(false);
     } else {
-      if (explicitRedirect) { router.replace(explicitRedirect); return; }
       const { data: profile } = await supabase.from("profiles").select("role").eq("id", data.user.id).single();
       const roleRedirects: { [key: string]: string } = { admin: "/admin", teacher: "/teacher", student: "/student" };
-      router.replace(profile?.role ? (roleRedirects[profile.role] || "/student") : "/student");
+      const rolePath = profile?.role ? (roleRedirects[profile.role] || "/student") : "/student";
+      const isGenericRedirect = !explicitRedirect || explicitRedirect === "/student" || explicitRedirect === "/";
+      if (!isGenericRedirect && explicitRedirect) {
+        router.replace(explicitRedirect);
+      } else {
+        router.replace(rolePath);
+      }
     }
   };
 
@@ -205,7 +211,7 @@ function LoginForm() {
           <div className="mt-7 space-y-4">
             <p className="text-white/40 text-sm text-center">
               ¿No tienes cuenta?{" "}
-              <Link href="/signup" className="text-white/70 hover:text-white underline underline-offset-2 transition-colors">Regístrate gratis</Link>
+              <Link href={`/signup${explicitRedirect || emailParam ? `?${new URLSearchParams({ ...(explicitRedirect ? { redirect: explicitRedirect } : {}), ...(emailParam ? { email: emailParam } : {}) }).toString()}` : ""}`} className="text-white/70 hover:text-white underline underline-offset-2 transition-colors">Regístrate gratis</Link>
             </p>
             <p className="text-white/20 text-xs text-center leading-relaxed">
               Al continuar aceptas los{" "}

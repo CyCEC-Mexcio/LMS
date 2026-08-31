@@ -1362,7 +1362,7 @@ export default function UnifiedCourseEditor({
               </Alert>
             )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 min-w-0">
               {/* Column 1 - Basic Info */}
               <div className="space-y-5">
                 <div className="flex items-center gap-3">
@@ -2035,7 +2035,7 @@ export default function UnifiedCourseEditor({
 
       {/* Success Message */}
       {successMessage && (
-        <Alert className="max-w-6xl mx-auto mt-4 mx-6 border-green-200 bg-green-50">
+        <Alert className="max-w-6xl mx-auto my-4 border-green-200 bg-green-50">
           <CheckCircle className="h-4 w-4 text-green-600" />
           <AlertDescription className="text-green-800">
             {successMessage}
@@ -2147,8 +2147,8 @@ export default function UnifiedCourseEditor({
         </>
       )}
 
-      <div className="max-w-[1400px] mx-auto px-6 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="max-w-7xl mx-auto px-6 py-8 min-w-0">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 min-w-0">
           {/* Column 1 - Información Básica */}
           <div className="space-y-6">
             <div className="flex items-center gap-3">

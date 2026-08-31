@@ -48,9 +48,9 @@ export default async function TeacherCoursesPage() {
   const courseList: Course[] = courses ?? [];
 
   return (
-    <div className="max-w-5xl mx-auto">
+    <div className="max-w-5xl mx-auto space-y-6 min-w-0">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-2 border-b border-gray-200">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Mis Cursos</h1>
           <p className="text-sm text-gray-500 mt-1">
@@ -61,9 +61,9 @@ export default async function TeacherCoursesPage() {
         </div>
         <Link
           href="/teacher/courses/new"
-          className="inline-flex items-center gap-2 bg-blue-600 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          className="inline-flex items-center gap-2 bg-blue-600 text-white text-sm font-medium px-4 py-2.5 rounded-xl hover:bg-blue-700 transition-colors shadow-sm"
         >
-          <span>➕</span>
+          <span></span>
           Crear Curso
         </Link>
       </div>
@@ -80,7 +80,7 @@ export default async function TeacherCoursesPage() {
           </p>
           <Link
             href="/teacher/courses/new"
-            className="inline-flex items-center gap-2 bg-blue-600 text-white text-sm font-medium px-5 py-2.5 rounded-lg hover:bg-blue-700 transition-colors"
+            className="inline-flex items-center gap-2 bg-blue-600 text-white text-sm font-medium px-5 py-2.5 rounded-xl hover:bg-blue-700 transition-colors"
           >
             ➕ Crear mi primer curso
           </Link>
@@ -89,70 +89,86 @@ export default async function TeacherCoursesPage() {
 
       {/* Course Grid */}
       {courseList.length > 0 && (
-        <div className="grid gap-4">
+        <div className="space-y-4 min-w-0">
           {courseList.map((course) => {
             const { label, color } = getCourseStatus(course);
             return (
               <div
                 key={course.id}
-                className="bg-white rounded-xl border border-gray-200 p-5 flex items-center gap-5 hover:shadow-md transition-shadow"
+                className="bg-white rounded-xl border border-gray-200 p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:shadow-md transition-shadow min-w-0"
               >
-                {/* Thumbnail */}
-                <div className="w-24 h-16 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
-                  {course.thumbnail_url ? (
-                    <img
-                      src={course.thumbnail_url}
-                      alt={course.title}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-2xl">
-                      📖
-                    </div>
-                  )}
-                </div>
-
-                {/* Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h2 className="text-sm font-semibold text-gray-900 truncate">
-                      {course.title}
-                    </h2>
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${color}`}>
-                      {label}
-                    </span>
-                  </div>
-                  {course.description && (
-                    <p className="text-xs text-gray-500 line-clamp-1">
-                      {course.description}
-                    </p>
-                  )}
-                  <p className="text-xs text-gray-400 mt-1">
-                    Creado el{" "}
-                    {new Date(course.created_at).toLocaleDateString("es-MX", {
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })}
-                    {course.price != null && (
-                      <span className="ml-3 font-medium text-gray-600">
-                        ${course.price.toFixed(2)} MXN
-                      </span>
+                {/* Info Container */}
+                <div className="flex items-center gap-4 min-w-0 flex-1 w-full">
+                  {/* Thumbnail */}
+                  <div className="w-20 h-14 sm:w-28 sm:h-20 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0 border border-gray-100">
+                    {course.thumbnail_url ? (
+                      <img
+                        src={course.thumbnail_url}
+                        alt={course.title}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-xl sm:text-2xl">
+                        📖
+                      </div>
                     )}
-                  </p>
+                  </div>
+
+                  {/* Text Details */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1 min-w-0">
+                      <h2
+                        className="text-sm sm:text-base font-semibold text-gray-900 truncate"
+                        title={course.title}
+                      >
+                        {course.title}
+                      </h2>
+                      <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium flex-shrink-0 ${color}`}>
+                        {label}
+                      </span>
+                    </div>
+
+                    {course.description && (
+                      <p className="text-xs text-gray-500 line-clamp-1 mb-1.5">
+                        {course.description}
+                      </p>
+                    )}
+
+                    <div className="flex items-center gap-3 text-xs text-gray-400 flex-wrap">
+                      <span>
+                        Creado el{" "}
+                        {new Date(course.created_at).toLocaleDateString("es-MX", {
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric",
+                        })}
+                      </span>
+                      {course.price != null && (
+                        <span className="font-semibold text-gray-700 bg-gray-100 px-2 py-0.5 rounded">
+                          ${course.price.toFixed(2)} MXN
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </div>
 
                 {/* Actions */}
-                <div className="flex items-center gap-2 flex-shrink-0">
+                <div className="flex items-center gap-2 flex-shrink-0 w-full sm:w-auto justify-end pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-100">
+                  <Link
+                    href={`/teacher/courses/${course.id}/preview`}
+                    className="text-xs sm:text-sm text-gray-600 hover:text-gray-900 font-medium px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+                  >
+                    Vista Previa
+                  </Link>
                   <Link
                     href={`/teacher/courses/${course.id}`}
-                    className="text-sm text-blue-600 hover:text-blue-800 font-medium px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors"
+                    className="text-xs sm:text-sm bg-blue-50 text-blue-600 hover:bg-blue-100 font-medium px-3 py-1.5 rounded-lg transition-colors"
                   >
                     Editar
                   </Link>
                   <Link
                     href={`/teacher/courses/${course.id}/chapters`}
-                    className="text-sm text-gray-600 hover:text-gray-800 font-medium px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+                    className="text-xs sm:text-sm text-gray-600 hover:text-gray-800 font-medium px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors"
                   >
                     Capítulos
                   </Link>

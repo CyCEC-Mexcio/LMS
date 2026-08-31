@@ -21,12 +21,12 @@ export default async function PlatformLayout({
         {/* Top Navbar */}
         <PlatformNavbar/>
 
-        <div className="flex flex-1 overflow-hidden">
+        <div className="flex flex-1 overflow-hidden min-w-0">
           {/* Sidebar */}
           <PlatformSidebar profile={profile} />
 
           {/* Main Content */}
-          <main className="flex-1 overflow-y-auto bg-gray-50 p-6">
+          <main className="flex-1 overflow-y-auto bg-gray-50 p-6 min-w-0">
             {children}
           </main>
         </div>

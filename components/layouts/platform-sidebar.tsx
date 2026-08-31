@@ -56,7 +56,7 @@ export default function PlatformSidebar({ profile }: { profile: Profile }) {
     .sort((a, b) => b.href.length - a.href.length)[0];
 
   return (
-    <aside className="w-64 bg-white border-r border-gray-200 overflow-y-auto">
+    <aside className="w-64 bg-white border-r border-gray-200 overflow-y-auto flex-shrink-0">
       <div className="p-4 space-y-1">
         {/* Role Badge */}
         <div className="mb-4 px-3 py-2 bg-red-50/80 border border-red-100 rounded-lg">

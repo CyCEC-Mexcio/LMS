@@ -6,11 +6,9 @@ export async function GET(request: Request) {
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get('code')
   const redirect = requestUrl.searchParams.get('redirect') || '/student'
+  const supabase = await createClient()
 
   if (code) {
-    // ✅ FIX: await cookies()
-    const supabase = await createClient()
-
     const { error } = await supabase.auth.exchangeCodeForSession(code)
 
     if (error) {
@@ -20,23 +18,35 @@ export async function GET(request: Request) {
       )
     }
 
-    // Claim any pre-assigned pending enrollments for this user
+  }
+
+  // Determine target redirect based on role if explicit redirect was not provided or is generic
+  let targetRedirect = redirect
+  const isGenericRedirect = !requestUrl.searchParams.get('redirect') || redirect === '/student' || redirect === '/'
+
+  if (isGenericRedirect) {
     try {
       const { data: { user } } = await supabase.auth.getUser()
-      if (user?.id && user?.email) {
-        const { error: rpcError } = await supabase.rpc('claim_pending_enrollments', {
-          user_id: user.id,
-          user_email: user.email,
-        })
-        if (rpcError) {
-          console.error('Error claiming pending enrollments:', rpcError)
+      if (user?.id) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single()
+
+        const roleRedirects: Record<string, string> = {
+          admin: '/admin',
+          teacher: '/teacher',
+          student: '/student',
+        }
+        if (profile?.role && roleRedirects[profile.role]) {
+          targetRedirect = roleRedirects[profile.role]
         }
       }
-    } catch (claimError) {
-      // Non-blocking: log but don't prevent login redirect
-      console.error('Exception claiming pending enrollments:', claimError)
+    } catch (err) {
+      console.error('Error fetching role in callback:', err)
     }
   }
 
-  return NextResponse.redirect(new URL(redirect, request.url))
+  return NextResponse.redirect(new URL(targetRedirect, request.url))
 }

@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { getUserProfile } from "@/lib/auth-utils";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,6 +13,7 @@ import {
   Mail,
   GraduationCap,
 } from "lucide-react";
+import { StudentContactButton } from "@/components/teacher/student-contact-button";
 
 export default async function TeacherAnalyticsPage() {
   const profile = await getUserProfile();
@@ -22,14 +23,22 @@ export default async function TeacherAnalyticsPage() {
   }
 
   const supabase = await createClient();
+  const adminSupabase = createAdminClient();
 
-  // Get all courses with detailed analytics
+  // Get all courses for this teacher with detailed analytics
   const { data: courses } = await supabase
     .from("courses")
     .select(`
       *,
+      sections (
+        id,
+        lessons (
+          id
+        )
+      ),
       enrollments (
         id,
+        student_id,
         amount_paid,
         purchased_at
       ),
@@ -43,9 +52,7 @@ export default async function TeacherAnalyticsPage() {
         )
       )
     `)
-    .eq("teacher_id", profile.id)
-    .eq("is_published", true)
-    .eq("is_approved", true);
+    .eq("teacher_id", profile.id);
 
   if (!courses || courses.length === 0) {
     return (
@@ -58,7 +65,7 @@ export default async function TeacherAnalyticsPage() {
               No hay datos de analíticas
             </h3>
             <p className="text-gray-600">
-              Publica un curso para comenzar a ver estadísticas
+              Crea tu primer curso para comenzar a ver estadísticas
             </p>
           </CardContent>
         </Card>
@@ -66,100 +73,217 @@ export default async function TeacherAnalyticsPage() {
     );
   }
 
-  // Fetch detailed student enrollments across all published courses of this teacher
-  const courseIds = courses.map((c) => c.id);
-  const { data: studentEnrollments } = await supabase
-    .from("enrollments")
-    .select(`
-      id,
-      purchased_at,
-      student_id,
-      course_id,
-      student:profiles!student_id (
-        id,
-        full_name,
-        email,
-        avatar_url
-      ),
-      course:courses!course_id (
-        id,
-        title
-      )
-    `)
-    .in("course_id", courseIds.length ? courseIds : ["none"])
-    .order("purchased_at", { ascending: false });
+  const teacherCourses = courses ?? [];
+  const teacherCourseIds = teacherCourses.map((c) => c.id);
 
-  // Calculate detailed progress for each student enrollment
-  const studentProgressList = await Promise.all(
-    (studentEnrollments ?? []).map(async (e: any) => {
-      const { data: sections } = await supabase
-        .from("sections")
-        .select("id, lessons(id)")
-        .eq("course_id", e.course_id);
+  // Map courseId -> lessonIds[] and lessonId -> course info
+  const courseLessonsMap = new Map<string, string[]>();
+  const lessonToCourseMap = new Map<string, { courseId: string; courseTitle: string }>();
 
-      const lessonIds = (sections ?? []).flatMap((s: any) =>
-        (s.lessons ?? []).map((l: any) => l.id)
+  teacherCourses.forEach((course) => {
+    const lessonIds: string[] = [];
+    (course.sections ?? []).forEach((sec: any) => {
+      (sec.lessons ?? []).forEach((l: any) => {
+        if (l.id) {
+          lessonIds.push(l.id);
+          lessonToCourseMap.set(l.id, { courseId: course.id, courseTitle: course.title });
+        }
+      });
+    });
+    courseLessonsMap.set(course.id, lessonIds);
+  });
+
+  const allTeacherLessonIds = Array.from(lessonToCourseMap.keys());
+
+  // 1. Fetch all progress records for any lesson in this teacher's courses (using admin client to bypass RLS)
+  let progressRecords: any[] = [];
+  if (allTeacherLessonIds.length > 0) {
+    const { data: progressData } = await adminSupabase
+      .from("progress")
+      .select("student_id, lesson_id, is_completed, completed_at")
+      .in("lesson_id", allTeacherLessonIds);
+    progressRecords = progressData ?? [];
+  }
+
+  // 2. Fetch all enrollment records for this teacher's courses
+  let enrollmentRecords: any[] = [];
+  if (teacherCourseIds.length > 0) {
+    const { data: enrollmentsData } = await adminSupabase
+      .from("enrollments")
+      .select("id, student_id, course_id, purchased_at, amount_paid")
+      .in("course_id", teacherCourseIds);
+    enrollmentRecords = enrollmentsData ?? [];
+  }
+
+  // 3. Find all unique (student_id, course_id) pairs from both enrollments and progress
+  const studentCoursesMap = new Map<string, { courseId: string; purchasedAt?: string }[]>();
+
+  enrollmentRecords.forEach((e) => {
+    if (!e.student_id || !e.course_id) return;
+    const list = studentCoursesMap.get(e.student_id) || [];
+    if (!list.some((item) => item.courseId === e.course_id)) {
+      list.push({ courseId: e.course_id, purchasedAt: e.purchased_at });
+      studentCoursesMap.set(e.student_id, list);
+    }
+  });
+
+  progressRecords.forEach((p) => {
+    if (!p.student_id || !p.lesson_id) return;
+    const courseInfo = lessonToCourseMap.get(p.lesson_id);
+    if (!courseInfo) return;
+    const list = studentCoursesMap.get(p.student_id) || [];
+    if (!list.some((item) => item.courseId === courseInfo.courseId)) {
+      list.push({ courseId: courseInfo.courseId, purchasedAt: p.completed_at });
+      studentCoursesMap.set(p.student_id, list);
+    }
+  });
+
+  const allStudentIds = Array.from(studentCoursesMap.keys());
+
+  // 4. Fetch profiles + Auth user data (emails & full names) for all discovered students
+  const profilesMap = new Map<
+    string,
+    { id: string; full_name: string | null; email: string | null; avatar_url: string | null }
+  >();
+
+  if (allStudentIds.length > 0) {
+    // Query profiles table with admin client (bypasses RLS)
+    const { data: profilesData } = await adminSupabase
+      .from("profiles")
+      .select("id, full_name, avatar_url")
+      .in("id", allStudentIds);
+
+    (profilesData ?? []).forEach((prof) => {
+      profilesMap.set(prof.id, {
+        id: prof.id,
+        full_name: prof.full_name,
+        email: null,
+        avatar_url: prof.avatar_url,
+      });
+    });
+
+    // Query auth.admin to resolve user emails and names
+    try {
+      await Promise.all(
+        allStudentIds.map(async (studentId) => {
+          try {
+            const { data: authUser } = await adminSupabase.auth.admin.getUserById(studentId);
+            if (authUser?.user) {
+              const u = authUser.user;
+              const existing = profilesMap.get(studentId);
+              const resolvedName =
+                existing?.full_name ||
+                u.user_metadata?.full_name ||
+                u.user_metadata?.name ||
+                (u.email ? u.email.split("@")[0] : "Estudiante");
+              const resolvedEmail = u.email || "";
+              const resolvedAvatar =
+                existing?.avatar_url ||
+                u.user_metadata?.avatar_url ||
+                u.user_metadata?.picture ||
+                null;
+
+              profilesMap.set(studentId, {
+                id: studentId,
+                full_name: resolvedName,
+                email: resolvedEmail,
+                avatar_url: resolvedAvatar,
+              });
+            }
+          } catch (err) {
+            console.error("Error fetching user from auth.admin:", err);
+          }
+        })
       );
+    } catch (err) {
+      console.error("Error batch resolving auth users:", err);
+    }
+  }
 
-      let completedLessons = 0;
-      if (lessonIds.length > 0) {
-        const { data: done } = await supabase
-          .from("progress")
-          .select("lesson_id")
-          .eq("student_id", e.student_id)
-          .eq("is_completed", true)
-          .in("lesson_id", lessonIds);
+  // 5. Track completed lessons: Set<"studentId:lessonId">
+  const completedSet = new Set<string>();
+  progressRecords.forEach((p) => {
+    if (p.is_completed) {
+      completedSet.add(`${p.student_id}:${p.lesson_id}`);
+    }
+  });
 
-        completedLessons = done?.length || 0;
-      }
+  // 6. Build the student progress list
+  const studentProgressList: {
+    id: string;
+    studentName: string;
+    studentEmail: string;
+    studentAvatar: string | null;
+    courseTitle: string;
+    purchasedAt: string;
+    completedLessons: number;
+    totalLessons: number;
+    progressPct: number;
+  }[] = [];
 
+  studentCoursesMap.forEach((courseList, studentId) => {
+    const studentProfile = profilesMap.get(studentId);
+    const studentName = studentProfile?.full_name || "Estudiante";
+    const studentEmail = studentProfile?.email || "";
+    const studentAvatar = studentProfile?.avatar_url || null;
+
+    courseList.forEach(({ courseId, purchasedAt }) => {
+      const course = teacherCourses.find((c) => c.id === courseId);
+      const courseTitle = course?.title || "Curso";
+      const lessonIds = courseLessonsMap.get(courseId) || [];
       const totalLessons = lessonIds.length;
+      const completedLessons = lessonIds.filter((lId) =>
+        completedSet.has(`${studentId}:${lId}`)
+      ).length;
       const progressPct =
         totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
 
-      return {
-        id: e.id,
-        studentName: e.student?.full_name || "Estudiante",
-        studentEmail: e.student?.email || "",
-        studentAvatar: e.student?.avatar_url || null,
-        courseTitle: e.course?.title || "Curso",
-        purchasedAt: e.purchased_at,
+      studentProgressList.push({
+        id: `${studentId}-${courseId}`,
+        studentName,
+        studentEmail,
+        studentAvatar,
+        courseTitle,
+        purchasedAt: purchasedAt || new Date().toISOString(),
         completedLessons,
         totalLessons,
         progressPct,
-      };
-    })
-  );
+      });
+    });
+  });
+
+  studentProgressList.sort((a, b) => b.progressPct - a.progressPct);
 
   // Calculate overall statistics
-  const totalEnrollments = courses.reduce(
-    (acc, course) => acc + (course.enrollments?.length || 0),
-    0
-  );
+  const totalEnrollments = studentProgressList.length;
 
-  const totalRevenue = courses.reduce((acc, course) => {
-    const courseRevenue = course.enrollments?.reduce(
+  const totalRevenue = teacherCourses.reduce((acc, course) => {
+    const courseRevenue = (course.enrollments ?? []).reduce(
       (sum: number, e: any) => sum + (Number(e.amount_paid) || 0),
       0
-    ) || 0;
+    );
     return acc + courseRevenue;
   }, 0);
 
-  const averageRating = courses.reduce((acc, course) => {
+  const averageRating = teacherCourses.reduce((acc, course) => {
     if (!course.reviews || course.reviews.length === 0) return acc;
     const courseAvg =
       course.reviews.reduce((sum: number, r: any) => sum + r.rating, 0) /
       course.reviews.length;
     return acc + courseAvg;
-  }, 0) / courses.length || 0;
+  }, 0) / (teacherCourses.length || 1) || 0;
 
   // Calculate course-specific metrics
-  const coursesWithMetrics = courses.map((course) => {
-    const enrollmentCount = course.enrollments?.length || 0;
-    const revenue = course.enrollments?.reduce(
+  const coursesWithMetrics = teacherCourses.map((course) => {
+    const courseStudents = new Set<string>();
+    enrollmentRecords.filter((e) => e.course_id === course.id).forEach((e) => courseStudents.add(e.student_id));
+    progressRecords.filter((p) => lessonToCourseMap.get(p.lesson_id)?.courseId === course.id).forEach((p) => courseStudents.add(p.student_id));
+    const enrollmentCount = courseStudents.size;
+
+    const revenue = (course.enrollments ?? []).reduce(
       (sum: number, e: any) => sum + (Number(e.amount_paid) || 0),
       0
-    ) || 0;
+    );
     
     const avgRating = course.reviews?.length
       ? course.reviews.reduce((sum: number, r: any) => sum + r.rating, 0) /
@@ -172,11 +296,11 @@ export default async function TeacherAnalyticsPage() {
     const sixtyDaysAgo = new Date();
     sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
 
-    const recentEnrollments = course.enrollments?.filter(
+    const recentEnrollments = (course.enrollments ?? []).filter(
       (e: any) => new Date(e.purchased_at) > thirtyDaysAgo
     ).length || 0;
 
-    const previousEnrollments = course.enrollments?.filter((e: any) => {
+    const previousEnrollments = (course.enrollments ?? []).filter((e: any) => {
       const date = new Date(e.purchased_at);
       return date > sixtyDaysAgo && date <= thirtyDaysAgo;
     }).length || 0;
@@ -458,12 +582,6 @@ export default async function TeacherAnalyticsPage() {
                 </thead>
                 <tbody>
                   {studentProgressList.map((st) => {
-                    const mailSubject = encodeURIComponent(`Seguimiento del curso: ${st.courseTitle}`);
-                    const mailBody = encodeURIComponent(
-                      `Hola ${st.studentName},\n\nNoté que estás inscrito en el curso "${st.courseTitle}" y tu avance actual es del ${st.progressPct}%.\n\nQuisiera saber si tienes alguna duda o te has atorado en alguna lección para ayudarte a continuar.\n\n¡Saludos!`
-                    );
-                    const mailtoUrl = st.studentEmail ? `mailto:${st.studentEmail}?subject=${mailSubject}&body=${mailBody}` : null;
-
                     return (
                       <tr key={st.id} className="border-b hover:bg-gray-50 transition-colors">
                         <td className="py-4 px-4">
@@ -509,16 +627,12 @@ export default async function TeacherAnalyticsPage() {
                           )}
                         </td>
                         <td className="py-4 px-4 text-center">
-                          {mailtoUrl ? (
-                            <a href={mailtoUrl} className="inline-block">
-                              <Button size="sm" variant="outline" className="gap-1.5 text-xs text-[#C4161C] border-red-200 hover:bg-red-50">
-                                <Mail size={13} />
-                                Enviar Correo
-                              </Button>
-                            </a>
-                          ) : (
-                            <span className="text-xs text-gray-400">Sin correo</span>
-                          )}
+                          <StudentContactButton
+                            studentName={st.studentName}
+                            studentEmail={st.studentEmail}
+                            courseTitle={st.courseTitle}
+                            progressPct={st.progressPct}
+                          />
                         </td>
                       </tr>
                     );

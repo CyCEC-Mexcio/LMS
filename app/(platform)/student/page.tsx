@@ -11,8 +11,12 @@ import { Button } from "@/components/ui/button";
 export default async function StudentDashboard() {
   const profile = await getUserProfile();
 
-  if (!profile || (profile.role !== "student" && profile.role !== "teacher")) {
+  if (!profile) {
     redirect("/login");
+  }
+
+  if (profile.role === "teacher") {
+    redirect("/teacher");
   }
 
   const supabase = await createClient();

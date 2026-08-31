@@ -81,7 +81,7 @@ export async function POST(request: Request) {
 
     // ── Build invite token & URL ────────────────────────────────────────────
     const token = crypto.randomUUID();
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://cycecmexico.com";
     const inviteUrl = `${baseUrl}/invite/student?token=${token}`;
     const logoUrl = `${baseUrl}/images/Logo.jpg`;
 
@@ -105,22 +105,6 @@ export async function POST(request: Request) {
       throw new Error("Error al guardar la invitación en la base de datos");
     }
 
-    // ── Insert pending_enrollments row ──────────────────────────────────────
-    // This ensures that if the student signs up with Google,
-    // claim_pending_enrollments will auto-enroll them.
-    const { error: pendingError } = await supabase
-      .from("pending_enrollments")
-      .insert({
-        email,
-        course_id: courseId,
-      });
-
-    if (pendingError) {
-      // If duplicate, that's okay — they already have a pending enrollment
-      if (!pendingError.message?.includes("duplicate")) {
-        console.error("Database insert error (pending_enrollments):", pendingError);
-      }
-    }
 
     // ── Price display helpers ───────────────────────────────────────────────
     let priceLabel = "";

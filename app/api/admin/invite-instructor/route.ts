@@ -32,7 +32,7 @@ export async function POST(request: Request) {
     }
 
     const token = crypto.randomUUID();
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://cycecmexico.com";
     const inviteUrl = `${baseUrl}/invite/instructor?token=${token}`;
     const logoUrl = `${baseUrl}/images/Logo.jpg`;
 

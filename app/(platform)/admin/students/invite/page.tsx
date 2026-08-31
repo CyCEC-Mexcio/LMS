@@ -47,6 +47,7 @@ export default function StudentInvitePage() {
   const [invites, setInvites] = useState<Invite[]>([]);
   const [role, setRole] = useState<string>("");
   const [loadingData, setLoadingData] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   // ── Load courses + invites ──────────────────────────────────────────────
@@ -81,15 +82,22 @@ export default function StudentInvitePage() {
 
   // ── Refresh invites ─────────────────────────────────────────────────────
   const refreshInvites = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    let iq = supabase
-      .from("student_invites")
-      .select("*, courses(title)")
-      .order("created_at", { ascending: false });
-    if (role === "teacher") iq = iq.eq("invited_by", user.id);
-    const { data } = await iq;
-    setInvites(data || []);
+    setRefreshing(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      let iq = supabase
+        .from("student_invites")
+        .select("*, courses(title)")
+        .order("created_at", { ascending: false });
+      if (role === "teacher") iq = iq.eq("invited_by", user.id);
+      const { data } = await iq;
+      setInvites(data || []);
+    } catch (err) {
+      console.error("Error refreshing invites:", err);
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   // ── Send invite ─────────────────────────────────────────────────────────
@@ -166,7 +174,7 @@ export default function StudentInvitePage() {
 
   // ── Status helpers ──────────────────────────────────────────────────────
   const getStatus = (inv: Invite) => {
-    if (inv.accepted) return { label: "Aceptada", color: "bg-green-100 text-green-700", icon: CheckCircle };
+    if (inv.accepted) return { label: "Aceptado", color: "bg-green-100 text-green-700", icon: CheckCircle };
     if (new Date(inv.expires_at) < new Date()) return { label: "Expirada", color: "bg-gray-100 text-gray-500", icon: AlertCircle };
     return { label: "Pendiente", color: "bg-yellow-100 text-yellow-700", icon: Clock };
   };
@@ -309,8 +317,20 @@ export default function StudentInvitePage() {
       {/* ── Pending Invites Table ──────────────────────────────────────────── */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
         <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">Invitaciones Enviadas</h2>
-          <span className="text-xs text-gray-400">{invites.length} total</span>
+          <div className="flex items-center gap-3">
+            <h2 className="text-lg font-semibold text-gray-900">Invitaciones Enviadas</h2>
+            <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">{invites.length} total</span>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={refreshInvites}
+            disabled={refreshing}
+            className="flex items-center gap-1.5 text-xs text-gray-600 hover:text-gray-900 transition-all disabled:opacity-60"
+          >
+            <RefreshCw size={13} className={refreshing ? "animate-spin text-blue-600" : ""} />
+            {refreshing ? "Actualizando..." : "Actualizar"}
+          </Button>
         </div>
 
         {invites.length === 0 ? (
@@ -386,12 +406,13 @@ export default function StudentInvitePage() {
                               <RefreshCw size={14} />
                             </button>
                           )}
-                          {!inv.accepted && (
-                            <button onClick={() => handleCancel(inv.id)} title="Cancelar"
-                              className="p-1.5 rounded hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors">
-                              <XCircle size={14} />
-                            </button>
-                          )}
+                          <button
+                            onClick={() => handleCancel(inv.id)}
+                            title={inv.accepted ? "Eliminar registro" : "Cancelar invitación"}
+                            className="p-1.5 rounded hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
+                          >
+                            <XCircle size={14} />
+                          </button>
                         </div>
                       </td>
                     </tr>

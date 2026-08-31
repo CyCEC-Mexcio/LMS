@@ -1,23 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, ArrowRight, Eye, EyeOff, CheckCircle2, GraduationCap, Award, BadgeCheck } from "lucide-react";
 import Image from "next/image";
 
-export default function SignupPage() {
+function SignupForm() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const explicitRedirect = searchParams.get("redirect");
+  const emailParam = searchParams.get("email") || "";
+  const supabase = createClient();
+
   const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(emailParam);
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-
-  const router = useRouter();
-  const supabase = createClient();
 
   const passwordStrength = (() => {
     if (!password) return 0;
@@ -38,14 +41,22 @@ export default function SignupPage() {
     setError(null);
     const { error } = await supabase.auth.signUp({ email, password, options: { data: { full_name: fullName } } });
     if (error) { setError(error.message); setLoading(false); }
-    else { setSuccess(true); setTimeout(() => { router.push("/student"); router.refresh(); }, 2000); }
+    else {
+      setSuccess(true);
+      setTimeout(() => {
+        router.push(explicitRedirect || "/student");
+        router.refresh();
+      }, 2000);
+    }
   };
 
   const handleGoogleSignup = async () => {
     setLoading(true);
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${window.location.origin}/auth/callback?redirect=/student` },
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback${explicitRedirect ? `?redirect=${encodeURIComponent(explicitRedirect)}` : ""}`,
+      },
     });
     if (error) { setError(error.message); setLoading(false); }
   };
@@ -196,7 +207,7 @@ export default function SignupPage() {
           <div className="mt-7 space-y-4">
             <p className="text-white/40 text-sm text-center">
               ¿Ya tienes cuenta?{" "}
-              <Link href="/login" className="text-white/70 hover:text-white underline underline-offset-2 transition-colors">Inicia Sesión</Link>
+              <Link href={`/login${explicitRedirect || emailParam ? `?${new URLSearchParams({ ...(explicitRedirect ? { redirect: explicitRedirect } : {}), ...(emailParam ? { email: emailParam } : {}) }).toString()}` : ""}`} className="text-white/70 hover:text-white underline underline-offset-2 transition-colors">Inicia Sesión</Link>
             </p>
             <p className="text-white/20 text-xs text-center leading-relaxed">
               Al registrarte aceptas los{" "}
@@ -208,5 +219,25 @@ export default function SignupPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense
+      fallback={
+        <div
+          className="min-h-screen flex items-center justify-center"
+          style={{
+            background:
+              "linear-gradient(135deg, #3d0404 0%, #621010 30%, #8a1515 55%, #5a0808 80%, #250202 100%)",
+          }}
+        >
+          <div className="w-7 h-7 border-2 border-white/20 border-t-white/70 rounded-full animate-spin" />
+        </div>
+      }
+    >
+      <SignupForm />
+    </Suspense>
   );
 }

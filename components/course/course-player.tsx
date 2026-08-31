@@ -446,7 +446,7 @@ export default function CoursePlayer({
   const showCompleteCourseButton = !isPreview && isLastLesson() && currentLessonFullyComplete && isAllLessonsComplete();
 
   return (
-    <div className="flex flex-col h-[calc(100vh-64px)]">
+    <div className="-m-6 flex flex-col h-[calc(100vh-64px)] overflow-hidden min-w-0">
       {/* Celebration Modal */}
       {showCelebration && (
         <CelebrationModal
@@ -477,9 +477,9 @@ export default function CoursePlayer({
         </div>
       )}
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden min-w-0">
       {/* Main Content Area */}
-      <div className="flex-1 overflow-y-auto bg-gray-50">
+      <div className="flex-1 min-w-0 overflow-y-auto bg-gray-50">
         <div className="max-w-5xl mx-auto p-6 space-y-6">
           {/* Progress Bar */}
           <Card className="p-4">
@@ -724,7 +724,7 @@ const SidebarCurriculum = ({
   isLessonUnlocked: (lessonId: string) => boolean;
 }) => {
   return (
-    <div className="w-96 bg-white border-l border-gray-200 overflow-y-auto">
+    <div className="w-80 lg:w-72 xl:w-80 flex-shrink-0 min-w-0 bg-white border-l border-gray-200 overflow-y-auto">
       <div className="p-4 border-b border-gray-200 sticky top-0 bg-white z-10">
         <h2 className="font-bold text-lg">Contenido del Curso</h2>
         <p className="text-sm text-gray-600">{course.title}</p>
