@@ -17,6 +17,8 @@ import {
   FileText,
   ClipboardCheck,
 } from "lucide-react";
+import { formatDuration } from "@/lib/utils";
+
 
 type Lesson = {
   id: string;
@@ -347,11 +349,11 @@ export default function ChapterManager({
                                 Quiz
                               </span>
                             )}
-                            {lesson.duration_minutes && (
-                              <span className="text-xs text-muted-foreground">
-                                {lesson.duration_minutes} min
-                              </span>
-                            )}
+                             {lesson.duration_minutes && (
+                               <span className="text-xs text-muted-foreground">
+                                 {formatDuration(lesson.duration_minutes)}
+                               </span>
+                             )}
                           </div>
                         </div>
 

@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Star, Users, Clock, BookOpen, Award, CheckCircle } from "lucide-react";
 import Link from "next/link";
 import { CoursePurchaseButton } from "@/components/course/course-purchase-button";
+import { formatDuration } from "@/lib/utils";
 
 export default async function CourseDetailPage({
   params,
@@ -216,13 +217,8 @@ export default async function CourseDetailPage({
                       <Clock className="w-4 h-4" />
                       <span>
                         {totalDuration > 0
-                          ? (
-                            totalDuration >= 60
-                              ? `${Math.floor(totalDuration / 60)}h ${totalDuration % 60}m`
-                              : `${totalDuration} min`
-                          )
-                          : "Duración por definir"}{" "}
-                        {totalDuration > 0 && "de contenido"}
+                          ? `${formatDuration(totalDuration)} de contenido`
+                          : "Duración por definir"}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
@@ -317,7 +313,7 @@ export default async function CourseDetailPage({
                                     {lesson.title}
                                     {lesson.duration_minutes > 0 && (
                                       <span className="text-gray-400">
-                                        · {lesson.duration_minutes} min
+                                        · {formatDuration(lesson.duration_minutes)}
                                       </span>
                                     )}
                                   </span>
@@ -468,13 +464,8 @@ export default async function CourseDetailPage({
                     <Clock className="w-4 h-4 text-gray-400" />
                     <span>
                       {totalDuration > 0
-                        ? (
-                          totalDuration >= 60
-                            ? `${Math.floor(totalDuration / 60)}h ${totalDuration % 60}m`
-                            : `${totalDuration} min`
-                        )
-                        : "Duración por definir"}{" "}
-                      {totalDuration > 0 && "de contenido"}
+                        ? `${formatDuration(totalDuration)} de contenido`
+                        : "Duración por definir"}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">

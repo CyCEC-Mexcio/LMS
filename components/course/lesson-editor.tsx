@@ -134,6 +134,27 @@ export default function ModularLessonEditor({
   const [lessonTitle, setLessonTitle] = useState("");
   const [lessonDescription, setLessonDescription] = useState("");
   const [durationMinutes, setDurationMinutes] = useState<number | null>(null);
+  // h/m/s breakdown for the editor UI (derived from durationMinutes)
+  const [durHours, setDurHours] = useState<number>(0);
+  const [durMins, setDurMins] = useState<number>(0);
+  const [durSecs, setDurSecs] = useState<number>(0);
+
+  /** Convert total decimal minutes → h/m/s fields */
+  const minutesToHMS = (totalMinutes: number | null) => {
+    if (!totalMinutes || totalMinutes <= 0) return { h: 0, m: 0, s: 0 };
+    const totalSecs = Math.round(totalMinutes * 60);
+    return {
+      h: Math.floor(totalSecs / 3600),
+      m: Math.floor((totalSecs % 3600) / 60),
+      s: totalSecs % 60,
+    };
+  };
+
+  /** Convert h/m/s → total decimal minutes (stored value) */
+  const hmsToDurationMinutes = (h: number, m: number, s: number): number | null => {
+    const total = h * 60 + m + s / 60;
+    return total > 0 ? total : null;
+  };
   const [isFreePreview, setIsFreePreview] = useState(false);
   
   // Modules
@@ -180,6 +201,10 @@ export default function ModularLessonEditor({
           setLessonTitle(lesson.title);
           setLessonDescription(lesson.description || "");
           setDurationMinutes(lesson.duration_minutes);
+          const { h, m, s } = minutesToHMS(lesson.duration_minutes);
+          setDurHours(h);
+          setDurMins(m);
+          setDurSecs(s);
           // Explicitly coerce to boolean — DB may return null for older records
           setIsFreePreview(lesson.is_free_preview === true);
 
@@ -268,6 +293,9 @@ export default function ModularLessonEditor({
         setLessonTitle("");
         setLessonDescription("");
         setDurationMinutes(null);
+        setDurHours(0);
+        setDurMins(0);
+        setDurSecs(0);
         setIsFreePreview(false);
         setModules([]);
       }
@@ -601,18 +629,60 @@ export default function ModularLessonEditor({
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="duration">Duración (minutos)</Label>
-                <Input
-                  id="duration"
-                  type="number"
-                  min="0"
-                  value={durationMinutes || ""}
-                  onChange={(e) =>
-                    setDurationMinutes(e.target.value ? parseInt(e.target.value) : null)
-                  }
-                  placeholder="15"
-                  className="mt-1"
-                />
+                <Label>Duración</Label>
+                <div className="mt-1 flex items-center gap-1">
+                  {/* Hours */}
+                  <div className="relative flex-1">
+                    <Input
+                      type="number"
+                      min="0"
+                      max="99"
+                      value={durHours || ""}
+                      onChange={(e) => {
+                        const h = e.target.value ? Math.max(0, parseInt(e.target.value)) : 0;
+                        setDurHours(h);
+                        setDurationMinutes(hmsToDurationMinutes(h, durMins, durSecs));
+                      }}
+                      placeholder="0"
+                      className="pr-7 text-center"
+                    />
+                    <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">h</span>
+                  </div>
+                  {/* Minutes */}
+                  <div className="relative flex-1">
+                    <Input
+                      type="number"
+                      min="0"
+                      max="59"
+                      value={durMins || ""}
+                      onChange={(e) => {
+                        const m = e.target.value ? Math.min(59, Math.max(0, parseInt(e.target.value))) : 0;
+                        setDurMins(m);
+                        setDurationMinutes(hmsToDurationMinutes(durHours, m, durSecs));
+                      }}
+                      placeholder="0"
+                      className="pr-7 text-center"
+                    />
+                    <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">m</span>
+                  </div>
+                  {/* Seconds */}
+                  <div className="relative flex-1">
+                    <Input
+                      type="number"
+                      min="0"
+                      max="59"
+                      value={durSecs || ""}
+                      onChange={(e) => {
+                        const s = e.target.value ? Math.min(59, Math.max(0, parseInt(e.target.value))) : 0;
+                        setDurSecs(s);
+                        setDurationMinutes(hmsToDurationMinutes(durHours, durMins, s));
+                      }}
+                      placeholder="0"
+                      className="pr-7 text-center"
+                    />
+                    <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">s</span>
+                  </div>
+                </div>
               </div>
 
               <div className="flex items-end">

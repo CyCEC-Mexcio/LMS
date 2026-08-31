@@ -18,6 +18,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { formatDuration } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -341,7 +342,7 @@ export default function StudentPreviewPlayer({
                 {currentLesson.duration_minutes && (
                   <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-2">
                     <Clock className="w-3.5 h-3.5" />
-                    <span>{currentLesson.duration_minutes} minutos de duración</span>
+                    <span>{formatDuration(currentLesson.duration_minutes)} de duración</span>
                   </div>
                 )}
               </div>
@@ -479,7 +480,7 @@ export default function StudentPreviewPlayer({
                                 {lesson.duration_minutes && (
                                   <span className="flex items-center gap-1">
                                     <Clock className="w-3 h-3 text-gray-400" />
-                                    {lesson.duration_minutes} min
+                                    {formatDuration(lesson.duration_minutes)}
                                   </span>
                                 )}
                                 {lesson.has_quiz && (

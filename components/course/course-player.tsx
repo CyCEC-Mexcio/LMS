@@ -12,6 +12,7 @@ import QuizComponent from "./quiz-component";
 import { useRouter } from "next/navigation";
 import CourseReview from "./course-review";
 import CelebrationModal from "./celebration-modal";
+import { formatDuration } from "@/lib/utils";
 
 type Quiz = {
   id: string;
@@ -788,7 +789,7 @@ const SidebarCurriculum = ({
                           </p>
                           <div className="flex items-center gap-2 text-xs text-gray-500">
                             {lesson.duration_minutes && (
-                              <span>{lesson.duration_minutes} min</span>
+                              <span>{formatDuration(lesson.duration_minutes)}</span>
                             )}
                             {lesson.has_quiz && (
                               <span className="text-orange-600">• Quiz</span>
