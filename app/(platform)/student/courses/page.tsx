@@ -259,7 +259,7 @@ export default async function StudentCoursesPage() {
     <div className="p-6 space-y-8 max-w-7xl mx-auto">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold mb-1">Mi Aprendizaje</h1>
+        <h1 className="text-3xl font-bold mb-1">Mis Cursos</h1>
         <p className="text-gray-600">
           Todos tus cursos en un solo lugar
         </p>
