@@ -59,6 +59,12 @@ export const navigationItems: NavItem[] = [
     roles: ["teacher"],
   },
   {
+    title: "Mis Alumnos",
+    href: "/teacher/students",
+    icon: "🎓",
+    roles: ["teacher"],
+  },
+  {
     title: "Crear Curso",
     href: "/teacher/courses/new",
     icon: "➕",

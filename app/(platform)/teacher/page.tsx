@@ -59,6 +59,7 @@ export default async function TeacherDashboard() {
   const actions = [
     { href: "/teacher/courses/new", icon: "➕", bg: "bg-blue-100", label: "Crear Curso", desc: "Nuevo curso desde cero" },
     { href: "/teacher/courses", icon: "📚", bg: "bg-green-100", label: "Mis Cursos", desc: "Ver y editar tus cursos" },
+    { href: "/teacher/students", icon: "🎓", bg: "bg-purple-100", label: "Mis Alumnos", desc: "Progreso y seguimiento" },
     { href: "/teacher/analytics", icon: "📈", bg: "bg-indigo-100", label: "Analíticas", desc: "Estadísticas detalladas" },
     { href: "/teacher/earnings", icon: "💰", bg: "bg-emerald-100", label: "Ganancias", desc: "Historial de pagos" },
     { href: "/teacher/settings", icon: "⚙️", bg: "bg-gray-100", label: "Configuración", desc: "Ajustes de tu cuenta" },
