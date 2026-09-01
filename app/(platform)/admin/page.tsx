@@ -40,14 +40,15 @@ export default async function AdminDashboardPage() {
     { label: "En Revisión", value: pendingCourses ?? 0, icon: "⏳", color: "bg-yellow-50 text-yellow-600", href: "/admin/courses/pending" },
     { label: "Total Usuarios", value: totalUsers ?? 0, icon: "👥", color: "bg-purple-50 text-purple-600", href: "/admin/users" },
     { label: "Estudiantes", value: totalStudents ?? 0, icon: "🎓", color: "bg-indigo-50 text-indigo-600", href: "/admin/users" },
-    { label: "Instructores", value: totalTeachers ?? 0, icon: "👨‍🏫", color: "bg-pink-50 text-pink-600", href: "/admin/users" },
+    { label: "Instructores", value: totalTeachers ?? 0, icon: "👨‍🏫", color: "bg-pink-50 text-pink-600", href: "/admin/teachers" },
   ];
 
   const actions = [
     { href: "/admin/courses/new", icon: "➕", bg: "bg-blue-100", label: "Crear Curso", desc: "Crea un nuevo curso desde cero" },
     { href: "/admin/courses", icon: "📚", bg: "bg-green-100", label: "Gestionar Cursos", desc: "Ver y editar todos los cursos" },
     { href: "/admin/courses/pending", icon: "⏳", bg: "bg-yellow-100", label: "Cursos Pendientes", desc: "Aprobar cursos de instructores", badge: pendingCourses ?? 0 },
-    { href: "/admin/create-instructor", icon: "👨‍🏫", bg: "bg-purple-100", label: "Crear Instructor", desc: "Invitar nuevos instructores" },
+    { href: "/admin/teachers", icon: "👨‍🏫", bg: "bg-purple-100", label: "Instructores", desc: "Cursos y alumnos por instructor" },
+    { href: "/admin/create-instructor", icon: "➕", bg: "bg-teal-100", label: "Crear Instructor", desc: "Invitar nuevos instructores" },
     { href: "/admin/students/invite", icon: "✉️", bg: "bg-teal-100", label: "Invitar Estudiantes", desc: "Pre-inscribir estudiantes a cursos" },
     { href: "/admin/users", icon: "👥", bg: "bg-indigo-100", label: "Usuarios", desc: "Gestionar cuentas de usuarios" },
     { href: "/admin/payouts", icon: "💳", bg: "bg-pink-100", label: "Pagos", desc: "Gestionar pagos a instructores" },

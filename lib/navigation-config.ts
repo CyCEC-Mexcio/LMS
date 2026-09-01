@@ -127,9 +127,15 @@ export const navigationItems: NavItem[] = [
     roles: ["admin"],
   },
   {
+    title: "Instructores",
+    href: "/admin/teachers",
+    icon: "👨‍🏫",
+    roles: ["admin"],
+  },
+  {
     title: "Crear Instructor",
     href: "/admin/create-instructor",
-    icon: "👨‍🏫",
+    icon: "➕",
     roles: ["admin"],
   },
   {
