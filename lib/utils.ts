@@ -6,16 +6,15 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
- * Formats a decimal `duration_minutes` value into a human-readable string.
+ * Formats a duration in seconds into a human-readable string.
  * Examples:
- *   90.5   → "1h 30m 30s"
- *   45     → "45m"
- *   0.5    → "30s"
- *   1.0083 → "1m 0s"  (rounds to nearest second)
+ *   5430  → "1h 30m 30s"
+ *   2700  → "45m"
+ *   30    → "30s"
  */
-export function formatDuration(totalMinutes: number | null | undefined): string {
-  if (!totalMinutes || totalMinutes <= 0) return "";
-  const totalSecs = Math.round(totalMinutes * 60);
+export function formatDurationSeconds(totalSeconds: number | null | undefined): string {
+  if (!totalSeconds || totalSeconds <= 0) return "";
+  const totalSecs = Math.round(totalSeconds);
   const h = Math.floor(totalSecs / 3600);
   const m = Math.floor((totalSecs % 3600) / 60);
   const s = totalSecs % 60;
@@ -25,4 +24,12 @@ export function formatDuration(totalMinutes: number | null | undefined): string 
   if (m > 0) parts.push(`${m}m`);
   if (s > 0) parts.push(`${s}s`);
   return parts.join(" ") || "0s";
+}
+
+/**
+ * Formats a decimal `duration_minutes` value into a human-readable string.
+ */
+export function formatDuration(totalMinutes: number | null | undefined): string {
+  if (!totalMinutes || totalMinutes <= 0) return "";
+  return formatDurationSeconds(totalMinutes * 60);
 }

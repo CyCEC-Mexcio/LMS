@@ -18,7 +18,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { formatDuration } from "@/lib/utils";
+import { formatDuration, formatDurationSeconds } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -44,6 +44,7 @@ type Lesson = {
   youtube_url: string | null;
   embed_code: string | null;
   content: string | null;
+  duration_seconds?: number | null;
   duration_minutes: number | null;
   position: number;
   is_free_preview: boolean;
@@ -339,10 +340,15 @@ export default function StudentPreviewPlayer({
                   Clase {currentLesson.position}
                 </span>
                 <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">{currentLesson.title}</h2>
-                {currentLesson.duration_minutes && (
+                {(currentLesson.duration_seconds || currentLesson.duration_minutes) && (
                   <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-2">
                     <Clock className="w-3.5 h-3.5" />
-                    <span>{formatDuration(currentLesson.duration_minutes)} de duración</span>
+                    <span>
+                      {formatDurationSeconds(
+                        currentLesson.duration_seconds ?? (currentLesson.duration_minutes ? currentLesson.duration_minutes * 60 : 0)
+                      )}{" "}
+                      de duración
+                    </span>
                   </div>
                 )}
               </div>
@@ -477,10 +483,12 @@ export default function StudentPreviewPlayer({
                                 )}
                               </div>
                               <div className="flex items-center gap-3 text-[10px] text-gray-500 mt-1">
-                                {lesson.duration_minutes && (
+                                {(lesson.duration_seconds || lesson.duration_minutes) && (
                                   <span className="flex items-center gap-1">
                                     <Clock className="w-3 h-3 text-gray-400" />
-                                    {formatDuration(lesson.duration_minutes)}
+                                    {formatDurationSeconds(
+                                      lesson.duration_seconds ?? (lesson.duration_minutes ? lesson.duration_minutes * 60 : 0)
+                                    )}
                                   </span>
                                 )}
                                 {lesson.has_quiz && (

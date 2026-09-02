@@ -17,13 +17,14 @@ import {
   FileText,
   ClipboardCheck,
 } from "lucide-react";
-import { formatDuration } from "@/lib/utils";
+import { formatDuration, formatDurationSeconds } from "@/lib/utils";
 
 
 type Lesson = {
   id: string;
   title: string;
   position: number;
+  duration_seconds?: number | null;
   duration_minutes: number | null;
   is_free_preview: boolean;
   video_url: string | null;
@@ -77,6 +78,7 @@ export default function ChapterManager({
             id,
             title,
             position,
+            duration_seconds,
             duration_minutes,
             is_free_preview,
             video_url,
@@ -349,11 +351,13 @@ export default function ChapterManager({
                                 Quiz
                               </span>
                             )}
-                             {lesson.duration_minutes && (
-                               <span className="text-xs text-muted-foreground">
-                                 {formatDuration(lesson.duration_minutes)}
-                               </span>
-                             )}
+                              {(lesson.duration_seconds || lesson.duration_minutes) && (
+                                <span className="text-xs text-muted-foreground">
+                                  {formatDurationSeconds(
+                                    lesson.duration_seconds ?? (lesson.duration_minutes ? lesson.duration_minutes * 60 : 0)
+                                  )}
+                                </span>
+                              )}
                           </div>
                         </div>
 

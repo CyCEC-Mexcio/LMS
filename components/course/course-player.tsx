@@ -12,7 +12,7 @@ import QuizComponent from "./quiz-component";
 import { useRouter } from "next/navigation";
 import CourseReview from "./course-review";
 import CelebrationModal from "./celebration-modal";
-import { formatDuration } from "@/lib/utils";
+import { formatDuration, formatDurationSeconds } from "@/lib/utils";
 
 type Quiz = {
   id: string;
@@ -39,6 +39,7 @@ type Lesson = {
   youtube_url: string | null;
   embed_code: string | null;
   content: string | null;
+  duration_seconds?: number | null;
   duration_minutes: number | null;
   position: number;
   is_free_preview: boolean;
@@ -788,8 +789,12 @@ const SidebarCurriculum = ({
                             {lessonIdx + 1}. {lesson.title}
                           </p>
                           <div className="flex items-center gap-2 text-xs text-gray-500">
-                            {lesson.duration_minutes && (
-                              <span>{formatDuration(lesson.duration_minutes)}</span>
+                            {(lesson.duration_seconds || lesson.duration_minutes) && (
+                              <span>
+                                {formatDurationSeconds(
+                                  lesson.duration_seconds ?? (lesson.duration_minutes ? lesson.duration_minutes * 60 : 0)
+                                )}
+                              </span>
                             )}
                             {lesson.has_quiz && (
                               <span className="text-orange-600">• Quiz</span>

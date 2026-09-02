@@ -14,6 +14,7 @@ type Lesson = {
   mux_playback_id: string | null;
   youtube_url: string | null;
   embed_code: string | null;
+  duration_seconds?: number | null;
   duration_minutes: number | null;
   content: string | null;
 };
@@ -93,8 +94,9 @@ export default function VideoPlayer({
     startTimeRef.current = Date.now();
 
     // Calculate estimated watch time based on duration
-    const estimatedDuration = lesson.duration_minutes 
-      ? lesson.duration_minutes * 60 * 1000 
+    const totalSecs = lesson.duration_seconds ?? (lesson.duration_minutes ? lesson.duration_minutes * 60 : null);
+    const estimatedDuration = totalSecs 
+      ? totalSecs * 1000 
       : 180000; // 3 minutes in milliseconds
 
     // Mark as watched after 80% of estimated duration

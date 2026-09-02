@@ -40,6 +40,7 @@ export default async function TakeCourse({
           youtube_url,
           embed_code,
           content,
+          duration_seconds,
           duration_minutes,
           position,
           is_free_preview,

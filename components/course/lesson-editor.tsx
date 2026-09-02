@@ -133,16 +133,16 @@ export default function ModularLessonEditor({
   // Lesson basic info
   const [lessonTitle, setLessonTitle] = useState("");
   const [lessonDescription, setLessonDescription] = useState("");
-  const [durationMinutes, setDurationMinutes] = useState<number | null>(null);
-  // h/m/s breakdown for the editor UI (derived from durationMinutes)
+  const [durationSeconds, setDurationSeconds] = useState<number | null>(null);
+  // h/m/s breakdown for the editor UI (derived from durationSeconds)
   const [durHours, setDurHours] = useState<number>(0);
   const [durMins, setDurMins] = useState<number>(0);
   const [durSecs, setDurSecs] = useState<number>(0);
 
-  /** Convert total decimal minutes → h/m/s fields */
-  const minutesToHMS = (totalMinutes: number | null) => {
-    if (!totalMinutes || totalMinutes <= 0) return { h: 0, m: 0, s: 0 };
-    const totalSecs = Math.round(totalMinutes * 60);
+  /** Convert total seconds → h/m/s fields */
+  const secondsToHMS = (totalSeconds: number | null) => {
+    if (!totalSeconds || totalSeconds <= 0) return { h: 0, m: 0, s: 0 };
+    const totalSecs = Math.round(totalSeconds);
     return {
       h: Math.floor(totalSecs / 3600),
       m: Math.floor((totalSecs % 3600) / 60),
@@ -150,9 +150,9 @@ export default function ModularLessonEditor({
     };
   };
 
-  /** Convert h/m/s → total decimal minutes (stored value) */
-  const hmsToDurationMinutes = (h: number, m: number, s: number): number | null => {
-    const total = h * 60 + m + s / 60;
+  /** Convert h/m/s → total integer seconds (stored value) */
+  const hmsToDurationSeconds = (h: number, m: number, s: number): number | null => {
+    const total = Math.round(h * 3600 + m * 60 + s);
     return total > 0 ? total : null;
   };
   const [isFreePreview, setIsFreePreview] = useState(false);
@@ -200,8 +200,9 @@ export default function ModularLessonEditor({
         if (lesson) {
           setLessonTitle(lesson.title);
           setLessonDescription(lesson.description || "");
-          setDurationMinutes(lesson.duration_minutes);
-          const { h, m, s } = minutesToHMS(lesson.duration_minutes);
+          const totalSecs = lesson.duration_seconds ?? (lesson.duration_minutes ? Math.round(lesson.duration_minutes * 60) : null);
+          setDurationSeconds(totalSecs);
+          const { h, m, s } = secondsToHMS(totalSecs);
           setDurHours(h);
           setDurMins(m);
           setDurSecs(s);
@@ -292,7 +293,7 @@ export default function ModularLessonEditor({
         // New lesson: explicitly reset all fields to defaults to prevent stale state
         setLessonTitle("");
         setLessonDescription("");
-        setDurationMinutes(null);
+        setDurationSeconds(null);
         setDurHours(0);
         setDurMins(0);
         setDurSecs(0);
@@ -421,7 +422,8 @@ export default function ModularLessonEditor({
       const lessonData = {
         title: lessonTitle,
         description: lessonDescription || null,
-        duration_minutes: durationMinutes,
+        duration_seconds: durationSeconds,
+        duration_minutes: durationSeconds ? Math.round(durationSeconds / 60) : null,
         is_free_preview: isFreePreview,
         video_provider: videoModule?.provider || null,
         youtube_url: videoModule?.youtube_url || null,
@@ -641,7 +643,7 @@ export default function ModularLessonEditor({
                       onChange={(e) => {
                         const h = e.target.value ? Math.max(0, parseInt(e.target.value)) : 0;
                         setDurHours(h);
-                        setDurationMinutes(hmsToDurationMinutes(h, durMins, durSecs));
+                        setDurationSeconds(hmsToDurationSeconds(h, durMins, durSecs));
                       }}
                       placeholder="0"
                       className="pr-7 text-center"
@@ -658,7 +660,7 @@ export default function ModularLessonEditor({
                       onChange={(e) => {
                         const m = e.target.value ? Math.min(59, Math.max(0, parseInt(e.target.value))) : 0;
                         setDurMins(m);
-                        setDurationMinutes(hmsToDurationMinutes(durHours, m, durSecs));
+                        setDurationSeconds(hmsToDurationSeconds(durHours, m, durSecs));
                       }}
                       placeholder="0"
                       className="pr-7 text-center"
@@ -675,7 +677,7 @@ export default function ModularLessonEditor({
                       onChange={(e) => {
                         const s = e.target.value ? Math.min(59, Math.max(0, parseInt(e.target.value))) : 0;
                         setDurSecs(s);
-                        setDurationMinutes(hmsToDurationMinutes(durHours, durMins, s));
+                        setDurationSeconds(hmsToDurationSeconds(durHours, durMins, s));
                       }}
                       placeholder="0"
                       className="pr-7 text-center"

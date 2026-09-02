@@ -84,15 +84,15 @@ export async function GET(
 
         const { data: lessons } = await supabase
           .from("lessons")
-          .select("duration_minutes")
+          .select("duration_seconds, duration_minutes")
           .in("section_id", sectionIds);
 
         if (lessons) {
-          const totalMinutes = lessons.reduce(
-            (sum: number, l: any) => sum + (l.duration_minutes || 0),
+          const totalSeconds = lessons.reduce(
+            (sum: number, l: any) => sum + (l.duration_seconds ?? (l.duration_minutes ? l.duration_minutes * 60 : 0)),
             0
           );
-          totalHours = Math.round(totalMinutes / 60);
+          totalHours = Math.round(totalSeconds / 3600);
         }
       }
     } catch {

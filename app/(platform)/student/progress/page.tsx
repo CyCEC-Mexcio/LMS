@@ -36,6 +36,7 @@ export default async function StudentProgressPage() {
           lessons (
             id,
             title,
+            duration_seconds,
             duration_minutes
           )
         )
@@ -97,8 +98,10 @@ export default async function StudentProgressPage() {
       (acc: number, section: any) =>
         acc +
         section.lessons.reduce(
-          (lessonAcc: number, lesson: any) =>
-            lessonAcc + (lesson.duration_minutes || 0),
+          (lessonAcc: number, lesson: any) => {
+            const secs = lesson.duration_seconds ?? (lesson.duration_minutes ? lesson.duration_minutes * 60 : 0);
+            return lessonAcc + Math.round(secs / 60);
+          },
           0
         ),
       0
@@ -137,7 +140,8 @@ export default async function StudentProgressPage() {
         .flatMap((e: any) => e.courses.sections)
         .flatMap((s: any) => s.lessons)
         .find((l: any) => l.id === lesson);
-      return acc + (lessonData?.duration_minutes || 0);
+      const secs = lessonData?.duration_seconds ?? (lessonData?.duration_minutes ? lessonData.duration_minutes * 60 : 0);
+      return acc + Math.round(secs / 60);
     }, 0) || 0;
 
   const totalHoursWatched = Math.floor(totalMinutesWatched / 60);

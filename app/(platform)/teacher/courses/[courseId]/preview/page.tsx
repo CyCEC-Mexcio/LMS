@@ -37,6 +37,7 @@ export default async function TeacherCoursePreview({
           youtube_url,
           embed_code,
           content,
+          duration_seconds,
           duration_minutes,
           position,
           is_free_preview,

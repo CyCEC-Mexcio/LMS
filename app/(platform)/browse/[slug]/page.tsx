@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Star, Users, Clock, BookOpen, Award, CheckCircle } from "lucide-react";
 import Link from "next/link";
 import { CoursePurchaseButton } from "@/components/course/course-purchase-button";
-import { formatDuration } from "@/lib/utils";
+import { formatDuration, formatDurationSeconds } from "@/lib/utils";
 
 export default async function CourseDetailPage({
   params,
@@ -34,6 +34,7 @@ export default async function CourseDetailPage({
         lessons (
           id,
           title,
+          duration_seconds,
           duration_minutes,
           is_free_preview
         )
@@ -88,7 +89,10 @@ export default async function CourseDetailPage({
   );
   const totalDuration = sortedSections.reduce(
     (sum: number, s: any) =>
-      sum + (s.lessons?.reduce((ls: number, l: any) => ls + (l.duration_minutes || 0), 0) || 0),
+      sum + (s.lessons?.reduce((ls: number, l: any) => {
+        const secs = l.duration_seconds ?? (l.duration_minutes ? l.duration_minutes * 60 : 0);
+        return ls + Math.round(secs / 60);
+      }, 0) || 0),
     0
   );
 
@@ -311,9 +315,11 @@ export default async function CourseDetailPage({
                                   <span className="flex items-center gap-2 text-gray-700">
                                     <BookOpen className="w-4 h-4 text-gray-400" />
                                     {lesson.title}
-                                    {lesson.duration_minutes > 0 && (
+                                    {(lesson.duration_seconds || lesson.duration_minutes) && (
                                       <span className="text-gray-400">
-                                        · {formatDuration(lesson.duration_minutes)}
+                                        · {formatDurationSeconds(
+                                          lesson.duration_seconds ?? (lesson.duration_minutes ? lesson.duration_minutes * 60 : 0)
+                                        )}
                                       </span>
                                     )}
                                   </span>

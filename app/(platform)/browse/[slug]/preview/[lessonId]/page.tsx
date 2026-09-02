@@ -39,6 +39,7 @@ export default async function FreePreviewPage({
           youtube_url,
           embed_code,
           content,
+          duration_seconds,
           duration_minutes,
           position,
           is_free_preview,
