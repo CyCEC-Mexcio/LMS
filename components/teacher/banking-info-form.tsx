@@ -114,12 +114,12 @@ export const BankingInfoForm = () => {
   }
 
   return (
-    <Card className="mt-6 border-blue-200 bg-blue-50/30">
+    <Card className="mt-6 border-red-200 bg-red-50/30">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="space-y-1">
             <CardTitle className="text-xl flex items-center gap-2">
-              <Landmark className="h-5 w-5 text-blue-600" />
+              <Landmark className="h-5 w-5 text-[#C4161C]" />
               Información Bancaria
             </CardTitle>
             <CardDescription className="text-gray-600">
@@ -154,7 +154,7 @@ export const BankingInfoForm = () => {
             </div>
             {(form.getValues("business_name") || form.getValues("rfc")) && (
               <>
-                <div className="border-t border-blue-100 my-4" />
+                <div className="border-t border-red-100 my-4" />
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {form.getValues("business_name") && (
                     <div>
@@ -219,7 +219,7 @@ export const BankingInfoForm = () => {
                 />
               </div>
 
-              <div className="pt-4 border-t border-blue-100 space-y-4">
+              <div className="pt-4 border-t border-red-100 space-y-4">
                 <h4 className="text-sm font-medium text-gray-700">Información Fiscal (Opcional)</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
@@ -252,7 +252,7 @@ export const BankingInfoForm = () => {
               </div>
 
               <div className="flex items-center gap-x-2 pt-4">
-                <Button disabled={isSubmitting} type="submit" className="bg-blue-600 hover:bg-blue-700">
+                <Button disabled={isSubmitting} type="submit" className="bg-[#C4161C] hover:bg-[#a81217] text-white">
                   {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                   Guardar Información
                 </Button>

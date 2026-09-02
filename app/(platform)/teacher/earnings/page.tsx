@@ -115,7 +115,7 @@ export default async function TeacherEarningsPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-blue-600 mb-1">
+            <div className="text-3xl font-bold text-[#C4161C] mb-1">
               ${totalEarnings.toLocaleString("es-MX")}
             </div>
             <div className="text-sm text-gray-600">
@@ -276,7 +276,7 @@ export default async function TeacherEarningsPage() {
       </Card>
 
       {/* Information Card */}
-      <Card className="bg-blue-50 border-blue-200">
+      <Card className="bg-red-50 border-red-200">
         <CardContent className="pt-6">
           <h3 className="font-semibold mb-2">Información sobre pagos</h3>
           <ul className="space-y-2 text-sm text-gray-700">

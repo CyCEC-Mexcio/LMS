@@ -61,7 +61,7 @@ export default async function TeacherCoursesPage() {
         </div>
         <Link
           href="/teacher/courses/new"
-          className="inline-flex items-center gap-2 bg-blue-600 text-white text-sm font-medium px-4 py-2.5 rounded-xl hover:bg-blue-700 transition-colors shadow-sm"
+          className="inline-flex items-center gap-2 bg-[#C4161C] text-white text-sm font-medium px-4 py-2.5 rounded-xl hover:bg-[#a81217] transition-colors shadow-sm"
         >
           <span></span>
           Crear Curso
@@ -80,7 +80,7 @@ export default async function TeacherCoursesPage() {
           </p>
           <Link
             href="/teacher/courses/new"
-            className="inline-flex items-center gap-2 bg-blue-600 text-white text-sm font-medium px-5 py-2.5 rounded-xl hover:bg-blue-700 transition-colors"
+            className="inline-flex items-center gap-2 bg-[#C4161C] text-white text-sm font-medium px-5 py-2.5 rounded-xl hover:bg-[#a81217] transition-colors"
           >
             ➕ Crear mi primer curso
           </Link>
@@ -162,7 +162,7 @@ export default async function TeacherCoursesPage() {
                   </Link>
                   <Link
                     href={`/teacher/courses/${course.id}`}
-                    className="text-xs sm:text-sm bg-blue-50 text-blue-600 hover:bg-blue-100 font-medium px-3 py-1.5 rounded-lg transition-colors"
+                    className="text-xs sm:text-sm bg-red-50 text-[#C4161C] hover:bg-red-100 font-medium px-3 py-1.5 rounded-lg transition-colors"
                   >
                     Editar
                   </Link>

@@ -182,9 +182,9 @@ export default function PaymentSettingsPage() {
                   Para recibir pagos de tus cursos, necesitas conectar una cuenta de Stripe.
                   El proceso es rápido y seguro.
                 </p>
-                <div className="bg-blue-50 rounded-lg p-4 space-y-2">
-                  <h4 className="font-medium text-blue-900">¿Qué necesitas?</h4>
-                  <ul className="list-disc list-inside space-y-1 text-blue-800">
+                <div className="bg-red-50 rounded-lg p-4 space-y-2">
+                  <h4 className="font-medium text-red-900">¿Qué necesitas?</h4>
+                  <ul className="list-disc list-inside space-y-1 text-red-800">
                     <li>Identificación oficial (INE/IFE o Pasaporte)</li>
                     <li>Información bancaria (CLABE interbancaria)</li>
                     <li>RFC (opcional pero recomendado)</li>

@@ -49,7 +49,7 @@ export default async function TeacherDashboard() {
   };
 
   const stats = [
-    { label: "Total Cursos", value: totalCourses, sub: `${draftCourses} borradores`, icon: "📖", accent: "text-blue-600", ring: "bg-blue-50" },
+    { label: "Total Cursos", value: totalCourses, sub: `${draftCourses} borradores`, icon: "📖", accent: "text-[#C4161C]", ring: "bg-red-50" },
     { label: "Publicados", value: publishedCourses, sub: "aprobados y activos", icon: "✅", accent: "text-green-600", ring: "bg-green-50" },
     { label: "En Revisión", value: pendingApproval, sub: "esperando aprobación", icon: "⏳", accent: "text-yellow-600", ring: "bg-yellow-50" },
     { label: "Estudiantes", value: totalStudents, sub: "total inscritos", icon: "🎓", accent: "text-purple-600", ring: "bg-purple-50" },
@@ -57,7 +57,7 @@ export default async function TeacherDashboard() {
   ];
 
   const actions = [
-    { href: "/teacher/courses/new", icon: "➕", bg: "bg-blue-100", label: "Crear Curso", desc: "Nuevo curso desde cero" },
+    { href: "/teacher/courses/new", icon: "➕", bg: "bg-red-100", label: "Crear Curso", desc: "Nuevo curso desde cero" },
     { href: "/teacher/courses", icon: "📚", bg: "bg-green-100", label: "Mis Cursos", desc: "Ver y editar tus cursos" },
     { href: "/teacher/students", icon: "🎓", bg: "bg-purple-100", label: "Mis Alumnos", desc: "Progreso y seguimiento" },
     { href: "/teacher/analytics", icon: "📈", bg: "bg-indigo-100", label: "Analíticas", desc: "Estadísticas detalladas" },
@@ -68,10 +68,10 @@ export default async function TeacherDashboard() {
   return (
     <div className="max-w-6xl mx-auto space-y-8">
       {/* Header */}
-      <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl p-6">
-        <p className="text-indigo-200 text-sm font-medium mb-1">Panel de Instructor</p>
+      <div className="bg-gradient-to-r from-slate-800 to-slate-700 text-white rounded-xl p-6">
+        <p className="text-slate-300 text-sm font-medium mb-1">Panel de Instructor</p>
         <h1 className="text-2xl font-bold">Bienvenido, {profile.full_name || "Instructor"} 👋</h1>
-        <p className="text-indigo-200 text-sm mt-1">
+        <p className="text-slate-300 text-sm mt-1">
           Tienes {totalCourses} curso{totalCourses !== 1 ? "s" : ""} · {totalStudents} estudiante{totalStudents !== 1 ? "s" : ""}
         </p>
       </div>
@@ -117,14 +117,14 @@ export default async function TeacherDashboard() {
           <div>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Mis Cursos</h2>
-              <Link href="/teacher/courses" className="text-xs text-blue-600 hover:underline">Ver todos →</Link>
+              <Link href="/teacher/courses" className="text-xs text-[#C4161C] hover:underline font-medium">Ver todos →</Link>
             </div>
             <div className="bg-white rounded-xl border border-gray-200 divide-y divide-gray-100">
               {!courses || courses.length === 0 ? (
                 <div className="text-center py-12 text-gray-400">
                   <p className="text-3xl mb-2">📭</p>
                   <p className="text-sm mb-3">Aún no tienes cursos</p>
-                  <Link href="/teacher/courses/new" className="text-xs text-blue-600 hover:underline font-medium">
+                  <Link href="/teacher/courses/new" className="text-xs text-[#C4161C] hover:underline font-medium">
                     Crear primer curso →
                   </Link>
                 </div>
@@ -146,7 +146,7 @@ export default async function TeacherDashboard() {
                         <p className="text-xs text-gray-400">{lessons} lecciones · {students} estudiantes</p>
                       </div>
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${color}`}>{label}</span>
-                      <Link href={`/teacher/courses/${course.id}`} className="text-xs text-blue-600 hover:text-blue-800 font-medium px-2 py-1 rounded hover:bg-blue-50 transition-colors flex-shrink-0">
+                      <Link href={`/teacher/courses/${course.id}`} className="text-xs text-[#C4161C] hover:text-red-800 font-medium px-2 py-1 rounded hover:bg-red-50 transition-colors flex-shrink-0">
                         Editar →
                       </Link>
                     </div>

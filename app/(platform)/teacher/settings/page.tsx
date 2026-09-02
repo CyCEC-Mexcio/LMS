@@ -190,15 +190,15 @@ export default function TeacherSettingsPage() {
       </Card>
 
       {/* What gets shown on courses */}
-      <Card className="border-blue-100 bg-blue-50">
+      <Card className="border-red-100 bg-red-50">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-blue-800 text-base">
+          <CardTitle className="flex items-center gap-2 text-red-800 text-base">
             <BookOpen className="w-4 h-4" />
             Cómo apareces en tus cursos
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center gap-4 p-4 bg-white rounded-lg border border-blue-100">
+          <div className="flex items-center gap-4 p-4 bg-white rounded-lg border border-red-100">
             <div className="w-14 h-14 rounded-full overflow-hidden bg-gray-100 border flex-shrink-0">
               {profile.avatar_url ? (
                 <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
