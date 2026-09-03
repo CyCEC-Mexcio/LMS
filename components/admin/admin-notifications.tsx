@@ -41,12 +41,14 @@ export function AdminNotifications() {
   return (
     <div className="relative">
       <button 
+        type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors flex items-center justify-center"
+        className="relative w-11 h-11 min-w-[44px] min-h-[44px] text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-[#C4161C]/50"
+        aria-label="Notificaciones de administrador"
       >
         <Bell className="w-5 h-5" />
         {data && data.totalNotifications > 0 && (
-          <span className="absolute top-1.5 right-1.5 flex h-2.5 w-2.5">
+          <span className="absolute top-2 right-2 flex h-2.5 w-2.5">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
             <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500 border-2 border-white"></span>
           </span>
@@ -59,7 +61,7 @@ export function AdminNotifications() {
             className="fixed inset-0 z-40"
             onClick={() => setIsOpen(false)}
           />
-          <div className="absolute right-0 mt-2 w-72 bg-white rounded-lg shadow-lg border border-gray-100 z-50 overflow-hidden">
+          <div className="absolute right-0 mt-2 w-72 max-w-[calc(100vw-24px)] bg-white rounded-lg shadow-lg border border-gray-100 z-50 overflow-hidden">
             <div className="p-3 bg-gray-50 border-b flex justify-between items-center text-sm font-semibold text-gray-700">
               Notificaciones de Admin
               {loading && <Loader2 className="w-3 h-3 animate-spin text-gray-400" />}

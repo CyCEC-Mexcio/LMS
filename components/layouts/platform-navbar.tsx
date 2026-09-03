@@ -1,5 +1,4 @@
 // components/layouts/platform-navbar.tsx
-import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { getUserProfile } from "@/lib/auth-utils";
 import Link from "next/link";
@@ -7,6 +6,7 @@ import Image from "next/image";
 import { Bell } from "lucide-react";
 import UserAvatarDropdown from "./user-avatar-dropdown";
 import { AdminNotifications } from "@/components/admin/admin-notifications";
+import { MobileNavToggle } from "./mobile-nav-toggle";
 
 export default async function PlatformNavbar() {
   const supabase = await createClient();
@@ -29,34 +29,42 @@ export default async function PlatformNavbar() {
       : "/student";
 
   return (
-    <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 flex-shrink-0 z-10">
-      {/* Left — Logo / brand */}
-      <Link href={dashboardHref} className="flex items-center gap-3 group">
-        <div className="relative w-8 h-8 flex-shrink-0">
-          <Image
-            src="/images/CyCEC Mexico Logo.png"
-            alt="CyCEC México"
-            fill
-            className="object-contain"
-            priority
-          />
-        </div>
-        <div className="flex flex-col leading-none hidden sm:flex">
-          <span className="font-bold text-gray-900 text-sm tracking-wide group-hover:text-[#8E0F14] transition-colors">
-            CyCEC México
-          </span>
-          <span className="text-gray-400 text-[10px] tracking-widest uppercase font-medium">
-            Plataforma de Aprendizaje
-          </span>
-        </div>
-      </Link>
+    <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-3 sm:px-6 flex-shrink-0 z-20">
+      {/* Left — Hamburger (mobile) + Logo / brand */}
+      <div className="flex items-center gap-1 sm:gap-3 min-w-0">
+        <MobileNavToggle />
+
+        <Link href={dashboardHref} className="flex items-center gap-2.5 sm:gap-3 group min-w-0">
+          <div className="relative w-8 h-8 flex-shrink-0">
+            <Image
+              src="/images/CyCEC Mexico Logo.png"
+              alt="CyCEC México"
+              fill
+              className="object-contain"
+              priority
+            />
+          </div>
+          <div className="flex flex-col leading-none hidden sm:flex min-w-0">
+            <span className="font-bold text-gray-900 text-sm tracking-wide group-hover:text-[#8E0F14] transition-colors truncate">
+              CyCEC México
+            </span>
+            <span className="text-gray-400 text-[10px] tracking-widest uppercase font-medium truncate">
+              Plataforma de Aprendizaje
+            </span>
+          </div>
+        </Link>
+      </div>
 
       {/* Right — notifications + avatar */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
         {profile.role === "admin" ? (
           <AdminNotifications />
         ) : (
-          <button className="relative p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors">
+          <button
+            type="button"
+            className="relative w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[#C4161C]/50"
+            aria-label="Ver notificaciones"
+          >
             <Bell className="w-5 h-5" />
           </button>
         )}

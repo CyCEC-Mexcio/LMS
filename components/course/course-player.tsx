@@ -5,7 +5,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { CheckCircle2, Circle, ChevronRight, ChevronDown, PlayCircle, Lock, Award, Eye, ArrowLeft } from "lucide-react";
+import { CheckCircle2, Circle, ChevronRight, ChevronDown, PlayCircle, Lock, Award, Eye, ArrowLeft, ListChecks, X } from "lucide-react";
 import VideoPlayer from "./video-player";
 import Link from "next/link";
 import QuizComponent from "./quiz-component";
@@ -100,6 +100,7 @@ export default function CoursePlayer({
   const [completingCourse, setCompletingCourse] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
   const [quizAttemptsLoaded, setQuizAttemptsLoaded] = useState(false);
+  const [mobileCurriculumOpen, setMobileCurriculumOpen] = useState(false);
   
   const supabase = createClient();
   const router = useRouter();
@@ -448,7 +449,7 @@ export default function CoursePlayer({
   const showCompleteCourseButton = !isPreview && isLastLesson() && currentLessonFullyComplete && isAllLessonsComplete();
 
   return (
-    <div className="-m-6 flex flex-col h-[calc(100vh-64px)] overflow-hidden min-w-0">
+    <div className="-m-4 sm:-m-6 lg:-m-8 flex flex-col h-[calc(100vh-64px)] overflow-hidden min-w-0">
       {/* Celebration Modal */}
       {showCelebration && (
         <CelebrationModal
@@ -459,46 +460,76 @@ export default function CoursePlayer({
       )}
       {/* Preview Banner */}
       {isPreview && (
-        <div className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-4 py-3 flex items-center justify-between flex-shrink-0 shadow-md">
-          <div className="flex items-center gap-3">
-            <Eye className="w-5 h-5" />
-            <div>
-              <span className="font-semibold text-sm">Modo Vista Previa</span>
-              <span className="text-amber-100 text-sm ml-2">— Estás viendo el curso como lo vería un estudiante</span>
+        <div className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-3 sm:px-4 py-2 sm:py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 flex-shrink-0 shadow-md">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <Eye className="w-5 h-5 flex-shrink-0" />
+            <div className="min-w-0">
+              <span className="font-semibold text-xs sm:text-sm">Modo Vista Previa</span>
+              <span className="text-amber-100 text-xs sm:text-sm ml-1 sm:ml-2 hidden sm:inline">— Estás viendo el curso como lo vería un estudiante</span>
             </div>
           </div>
-          {previewBackUrl && (
-            <Link
-              href={previewBackUrl}
-              className="flex items-center gap-2 bg-white/20 hover:bg-white/30 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+          <div className="flex items-center gap-2 self-end sm:self-auto flex-shrink-0">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setMobileCurriculumOpen(true)}
+              className="lg:hidden bg-white/20 hover:bg-white/30 text-white border-white/30 text-xs font-medium min-h-[36px]"
             >
-              <ArrowLeft className="w-4 h-4" />
-              Volver al editor
-            </Link>
-          )}
+              <ListChecks className="w-4 h-4 mr-1" />
+              Temario
+            </Button>
+            {previewBackUrl && (
+              <Link
+                href={previewBackUrl}
+                className="flex items-center gap-1.5 bg-white/20 hover:bg-white/30 text-white text-xs sm:text-sm font-medium px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg transition-colors min-h-[36px]"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>Volver al editor</span>
+              </Link>
+            )}
+          </div>
         </div>
       )}
 
-      <div className="flex flex-1 overflow-hidden min-w-0">
-      {/* Main Content Area */}
-      <div className="flex-1 min-w-0 overflow-y-auto bg-gray-50">
-        <div className="max-w-5xl mx-auto p-6 space-y-6">
-          {/* Progress Bar */}
-          <Card className="p-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-gray-700">Progreso del curso</span>
-              <span className="text-sm font-bold text-blue-600">{courseProgress}%</span>
+      <div className="flex flex-1 overflow-hidden min-w-0 relative">
+        {/* Main Content Area */}
+        <div className="flex-1 min-w-0 overflow-y-auto bg-gray-50">
+          <div className="max-w-5xl mx-auto p-3 sm:p-6 space-y-4 sm:space-y-6 min-w-0">
+            {/* Mobile Curriculum Trigger Bar */}
+            <div className="lg:hidden">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setMobileCurriculumOpen(true)}
+                className="w-full flex items-center justify-between min-h-[44px] bg-white border-gray-200 hover:bg-gray-50 shadow-xs"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <ListChecks className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                  <span className="font-medium text-sm text-gray-800 truncate">Temario del Curso</span>
+                </div>
+                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700">
+                  {completedLessonsCount}/{allLessons.length} lecciones
+                </span>
+              </Button>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div
-                className="bg-blue-600 h-2 rounded-full transition-all"
-                style={{ width: `${courseProgress}%` }}
-              />
-            </div>
-            <p className="text-xs text-gray-600 mt-2">
-              {completedLessonsCount} de {allLessons.length} lecciones completadas
-            </p>
-          </Card>
+
+            {/* Progress Bar */}
+            <Card className="p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-gray-700">Progreso del curso</span>
+                <span className="text-sm font-bold text-blue-600">{courseProgress}%</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div
+                  className="bg-blue-600 h-2 rounded-full transition-all"
+                  style={{ width: `${courseProgress}%` }}
+                />
+              </div>
+              <p className="text-xs text-gray-600 mt-2">
+                {completedLessonsCount} de {allLessons.length} lecciones completadas
+              </p>
+            </Card>
 
           {/* Lesson Title */}
           <div>
@@ -654,17 +685,70 @@ export default function CoursePlayer({
         </div>
       </div>
 
-      {/* Sidebar - Optimized */}
-      <SidebarCurriculum 
-        course={course}
-        currentLesson={currentLesson}
-        expandedSections={expandedSections}
-        toggleSection={toggleSection}
-        selectLesson={selectLesson}
-        isLessonFullyCompleted={isLessonFullyCompleted}
-        isLessonUnlocked={isLessonUnlocked}
-      />
+      {/* Desktop Sidebar (hidden on mobile/tablet < lg) */}
+      <div className="hidden lg:flex flex-col w-80 lg:w-72 xl:w-80 flex-shrink-0 min-w-0 bg-white border-l border-gray-200 overflow-y-auto">
+        <SidebarCurriculum 
+          course={course}
+          currentLesson={currentLesson}
+          expandedSections={expandedSections}
+          toggleSection={toggleSection}
+          selectLesson={selectLesson}
+          isLessonFullyCompleted={isLessonFullyCompleted}
+          isLessonUnlocked={isLessonUnlocked}
+        />
+      </div>
       </div>{/* close flex row */}
+
+      {/* Mobile & Tablet Slide-Over Curriculum Drawer */}
+      <div
+        className={`fixed inset-0 z-50 lg:hidden transition-opacity duration-300 ${
+          mobileCurriculumOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        }`}
+        aria-hidden={!mobileCurriculumOpen}
+      >
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-xs transition-opacity"
+          onClick={() => setMobileCurriculumOpen(false)}
+        />
+        <div
+          className={`fixed inset-y-0 right-0 w-80 max-w-[85vw] bg-white shadow-2xl flex flex-col z-10 transform transition-transform duration-300 ease-in-out ${
+            mobileCurriculumOpen ? "translate-x-0" : "translate-x-full"
+          }`}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Temario del curso"
+        >
+          <div className="p-4 border-b border-gray-200 flex items-center justify-between flex-shrink-0 bg-gray-50">
+            <div className="min-w-0">
+              <h2 className="font-bold text-base text-gray-900 truncate">Temario del Curso</h2>
+              <p className="text-xs text-gray-500 truncate">{course.title}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setMobileCurriculumOpen(false)}
+              className="w-10 h-10 min-w-[40px] min-h-[40px] flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+              aria-label="Cerrar temario"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto">
+            <SidebarCurriculum 
+              course={course}
+              currentLesson={currentLesson}
+              expandedSections={expandedSections}
+              toggleSection={toggleSection}
+              selectLesson={(lesson, section) => {
+                selectLesson(lesson, section);
+                setMobileCurriculumOpen(false);
+              }}
+              isLessonFullyCompleted={isLessonFullyCompleted}
+              isLessonUnlocked={isLessonUnlocked}
+              isMobile={true}
+            />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -716,6 +800,7 @@ const SidebarCurriculum = ({
   selectLesson,
   isLessonFullyCompleted,
   isLessonUnlocked,
+  isMobile = false,
 }: {
   course: Course;
   currentLesson: Lesson;
@@ -724,15 +809,18 @@ const SidebarCurriculum = ({
   selectLesson: (lesson: Lesson, section: Section) => void;
   isLessonFullyCompleted: (lesson: Lesson) => boolean;
   isLessonUnlocked: (lessonId: string) => boolean;
+  isMobile?: boolean;
 }) => {
   return (
-    <div className="w-80 lg:w-72 xl:w-80 flex-shrink-0 min-w-0 bg-white border-l border-gray-200 overflow-y-auto">
-      <div className="p-4 border-b border-gray-200 sticky top-0 bg-white z-10">
-        <h2 className="font-bold text-lg">Contenido del Curso</h2>
-        <p className="text-sm text-gray-600">{course.title}</p>
-      </div>
+    <div className="w-full min-w-0 flex-1 flex flex-col">
+      {!isMobile && (
+        <div className="p-4 border-b border-gray-200 sticky top-0 bg-white z-10">
+          <h2 className="font-bold text-lg">Contenido del Curso</h2>
+          <p className="text-sm text-gray-600 truncate">{course.title}</p>
+        </div>
+      )}
 
-      <div className="p-2">
+      <div className="p-2 flex-1">
         {course.sections.map((section, sectionIdx) => {
           const sectionLessons = section.lessons;
           const completedInSection = sectionLessons.filter((l) =>

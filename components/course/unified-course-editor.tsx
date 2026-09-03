@@ -1991,8 +1991,8 @@ export default function UnifiedCourseEditor({
 
       {/* Section Progress Bars */}
       <div className="border-b border-border bg-background">
-        <div className="max-w-6xl mx-auto px-6 py-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
             {[
               { label: "Información Básica", ...sectionProgress.basica },
               { label: "Media y Detalles", ...sectionProgress.media },
@@ -2024,7 +2024,7 @@ export default function UnifiedCourseEditor({
               href={isAdmin ? `/admin/courses/${courseId}/preview` : `/teacher/courses/${courseId}/preview`}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors shadow-sm"
+              className="inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors shadow-sm min-h-[40px]"
             >
               <Eye className="w-4 h-4" />
               Vista Previa
@@ -2035,7 +2035,7 @@ export default function UnifiedCourseEditor({
 
       {/* Success Message */}
       {successMessage && (
-        <Alert className="max-w-6xl mx-auto my-4 border-green-200 bg-green-50">
+        <Alert className="max-w-6xl mx-auto my-4 mx-4 sm:mx-auto border-green-200 bg-green-50">
           <CheckCircle className="h-4 w-4 text-green-600" />
           <AlertDescription className="text-green-800">
             {successMessage}
@@ -2046,7 +2046,7 @@ export default function UnifiedCourseEditor({
       {/* Status Banners */}
       {isAdmin ? (
         <div className="border-b border-border bg-gray-50">
-          <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <p className="text-sm text-gray-700">
               {course.is_published ? (
                 <span className="flex items-center gap-2">
@@ -2069,6 +2069,7 @@ export default function UnifiedCourseEditor({
               }
               disabled={saving || (!course.is_published && !allComplete)}
               variant={course.is_published ? "outline" : "default"}
+              className="min-h-[40px]"
             >
               {course.is_published ? "Despublicar" : "Publicar"}
             </Button>
@@ -2078,9 +2079,9 @@ export default function UnifiedCourseEditor({
         <>
           {course.pending_approval && !course.is_approved && (
             <div className="border-b border-border bg-amber-50">
-              <div className="max-w-6xl mx-auto px-6 py-3">
+              <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3">
                 <p className="text-sm text-amber-800 flex items-center gap-2">
-                  <Clock className="w-4 h-4" />
+                  <Clock className="w-4 h-4 flex-shrink-0" />
                   Este curso está pendiente de aprobación. Te notificaremos cuando
                   sea aprobado.
                 </p>
@@ -2090,7 +2091,7 @@ export default function UnifiedCourseEditor({
 
           {!course.pending_approval && !course.is_approved && (
             <div className="border-b border-border bg-blue-50">
-              <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
+              <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <p className="text-sm text-blue-800">
                   Completa tu curso y envíalo para aprobación cuando esté listo.
                 </p>
@@ -2098,7 +2099,7 @@ export default function UnifiedCourseEditor({
                   size="sm"
                   onClick={() => setSubmitForApprovalDialog(true)}
                   disabled={saving || !allComplete}
-                  className="bg-blue-600 hover:bg-blue-700"
+                  className="bg-blue-600 hover:bg-blue-700 min-h-[40px]"
                 >
                   <Send className="w-4 h-4 mr-2" />
                   Enviar para Aprobación
@@ -2109,16 +2110,16 @@ export default function UnifiedCourseEditor({
 
           {course.is_approved && !course.is_published && (
             <div className="border-b border-border bg-green-50">
-              <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
+              <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <p className="text-sm text-green-800 flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4" />
+                  <CheckCircle className="w-4 h-4 flex-shrink-0" />
                   Tu curso ha sido aprobado. Puedes publicarlo cuando quieras.
                 </p>
                 <Button
                   size="sm"
                   onClick={() => setPublishDialog(true)}
                   disabled={saving}
-                  className="bg-green-600 hover:bg-green-700"
+                  className="bg-green-600 hover:bg-green-700 min-h-[40px]"
                 >
                   Publicar Curso
                 </Button>
@@ -2128,9 +2129,9 @@ export default function UnifiedCourseEditor({
 
           {course.is_published && (
             <div className="border-b border-border bg-green-50">
-              <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
+              <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <p className="text-sm text-green-800 flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4" />
+                  <CheckCircle className="w-4 h-4 flex-shrink-0" />
                   Este curso está publicado y visible para estudiantes
                 </p>
                 <Button
@@ -2138,6 +2139,7 @@ export default function UnifiedCourseEditor({
                   variant="outline"
                   onClick={() => setUnpublishDialog(true)}
                   disabled={saving}
+                  className="min-h-[40px]"
                 >
                   Despublicar
                 </Button>
@@ -2147,8 +2149,8 @@ export default function UnifiedCourseEditor({
         </>
       )}
 
-      <div className="max-w-7xl mx-auto px-6 py-8 min-w-0">
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 min-w-0">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-8 min-w-0">
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 sm:gap-8 min-w-0">
           {/* Column 1 - Información Básica */}
           <div className="space-y-6">
             <div className="flex items-center gap-3">
@@ -2828,7 +2830,7 @@ export default function UnifiedCourseEditor({
                           )}
                         </div>
 
-                        <div className="flex items-center ml-2 border-l border-border pl-2 border-opacity-0 group-hover:border-opacity-100 transition-all opacity-0 group-hover:opacity-100">
+                        <div className="flex items-center ml-2 border-l border-border pl-2 sm:border-opacity-0 sm:group-hover:border-opacity-100 transition-all opacity-100 sm:opacity-0 sm:group-hover:opacity-100">
                           {editingChapterId === section.id ? (
                             <>
                               <Button
@@ -2914,7 +2916,7 @@ export default function UnifiedCourseEditor({
                                       </Badge>
                                     )}
                                   </div>
-                                  <div className="opacity-0 group-hover/lesson:opacity-100 transition-opacity bg-muted p-1.5 rounded-md">
+                                  <div className="opacity-100 sm:opacity-0 sm:group-hover/lesson:opacity-100 transition-opacity bg-muted p-1.5 rounded-md">
                                     <Pencil className="w-3 h-3 text-muted-foreground" />
                                   </div>
                                 </div>

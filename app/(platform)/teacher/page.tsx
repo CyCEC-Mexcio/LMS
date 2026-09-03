@@ -66,44 +66,47 @@ export default async function TeacherDashboard() {
   ];
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8">
+    <div className="max-w-6xl mx-auto space-y-6 sm:space-y-8 min-w-0 w-full">
       {/* Header */}
-      <div className="bg-gradient-to-r from-slate-800 to-slate-700 text-white rounded-xl p-6">
-        <p className="text-slate-300 text-sm font-medium mb-1">Panel de Instructor</p>
-        <h1 className="text-2xl font-bold">Bienvenido, {profile.full_name || "Instructor"} 👋</h1>
-        <p className="text-slate-300 text-sm mt-1">
+      <div className="bg-gradient-to-r from-slate-800 to-slate-700 text-white rounded-xl p-4 sm:p-6 shadow-xs">
+        <p className="text-slate-300 text-xs sm:text-sm font-medium mb-1 break-words">Panel de Instructor</p>
+        <h1 className="text-xl sm:text-2xl font-bold break-words">Bienvenido, {profile.full_name || "Instructor"} 👋</h1>
+        <p className="text-slate-300 text-xs sm:text-sm mt-1 break-words">
           Tienes {totalCourses} curso{totalCourses !== 1 ? "s" : ""} · {totalStudents} estudiante{totalStudents !== 1 ? "s" : ""}
         </p>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
         {stats.map((stat) => (
-          <div key={stat.label} className="bg-white rounded-xl border border-gray-200 p-4 text-center">
-            <div className={`w-10 h-10 rounded-lg flex items-center justify-center mx-auto mb-2 ${stat.ring}`}>
-              <span className="text-xl">{stat.icon}</span>
+          <div
+            key={stat.label}
+            className="bg-white rounded-xl border border-gray-200 p-3 sm:p-4 text-center min-w-0 flex flex-col items-center justify-center last:col-span-2 sm:last:col-span-1 lg:last:col-span-1"
+          >
+            <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center mx-auto mb-2 flex-shrink-0 ${stat.ring}`}>
+              <span className="text-lg sm:text-xl">{stat.icon}</span>
             </div>
-            <p className={`text-2xl font-bold ${stat.accent}`}>{stat.value}</p>
-            <p className="text-xs font-medium text-gray-700 mt-0.5">{stat.label}</p>
-            <p className="text-xs text-gray-400">{stat.sub}</p>
+            <p className={`text-xl sm:text-2xl font-bold break-all leading-tight ${stat.accent}`}>{stat.value}</p>
+            <p className="text-xs font-medium text-gray-700 mt-1 break-words">{stat.label}</p>
+            <p className="text-[11px] sm:text-xs text-gray-400 mt-0.5 break-words">{stat.sub}</p>
           </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
         {/* Quick Actions */}
         <div>
-          <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Acciones Rápidas</h2>
+          <h2 className="text-xs sm:text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3 sm:mb-4">Acciones Rápidas</h2>
           <div className="space-y-2">
             {actions.map((action) => (
-              <Link key={action.href} href={action.href}>
-                <div className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-3 hover:shadow-md transition-shadow">
-                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${action.bg}`}>
-                    <span className="text-lg">{action.icon}</span>
+              <Link key={action.href} href={action.href} className="block focus:outline-none focus:ring-2 focus:ring-[#C4161C]/50 rounded-xl">
+                <div className="bg-white rounded-xl border border-gray-200 p-3 sm:p-4 flex items-center gap-3 hover:shadow-md transition-shadow min-h-[44px]">
+                  <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${action.bg}`}>
+                    <span className="text-lg sm:text-xl">{action.icon}</span>
                   </div>
-                  <div>
-                    <p className="text-sm font-semibold text-gray-900">{action.label}</p>
-                    <p className="text-xs text-gray-500">{action.desc}</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-900 break-words">{action.label}</p>
+                    <p className="text-xs text-gray-500 truncate">{action.desc}</p>
                   </div>
                 </div>
               </Link>
@@ -115,11 +118,11 @@ export default async function TeacherDashboard() {
         <div className="lg:col-span-2 space-y-6">
           {/* My Courses */}
           <div>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Mis Cursos</h2>
-              <Link href="/teacher/courses" className="text-xs text-[#C4161C] hover:underline font-medium">Ver todos →</Link>
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <h2 className="text-xs sm:text-sm font-semibold text-gray-500 uppercase tracking-wider">Mis Cursos</h2>
+              <Link href="/teacher/courses" className="text-xs text-[#C4161C] hover:underline font-medium min-h-[32px] flex items-center">Ver todos →</Link>
             </div>
-            <div className="bg-white rounded-xl border border-gray-200 divide-y divide-gray-100">
+            <div className="bg-white rounded-xl border border-gray-200 divide-y divide-gray-100 overflow-hidden">
               {!courses || courses.length === 0 ? (
                 <div className="text-center py-12 text-gray-400">
                   <p className="text-3xl mb-2">📭</p>
@@ -130,25 +133,29 @@ export default async function TeacherDashboard() {
                 </div>
               ) : (
                 courses.slice(0, 5).map((course: any) => {
-                  const { label, color, dot } = getCourseStatus(course);
+                  const { label, color } = getCourseStatus(course);
                   const lessons = course.sections?.reduce((a: number, s: any) => a + (s.lessons?.length ?? 0), 0) ?? 0;
                   const students = course.enrollments?.length ?? 0;
                   return (
-                    <div key={course.id} className="flex items-center gap-4 p-4 hover:bg-gray-50 transition-colors">
-                      <div className="w-12 h-10 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
-                        {course.thumbnail_url
-                          ? <img src={course.thumbnail_url} alt={course.title} className="w-full h-full object-cover" />
-                          : <div className="w-full h-full flex items-center justify-center text-lg">📖</div>
-                        }
+                    <div key={course.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 p-3 sm:p-4 hover:bg-gray-50 transition-colors">
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <div className="w-12 h-10 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                          {course.thumbnail_url
+                            ? <img src={course.thumbnail_url} alt={course.title} className="w-full h-full object-cover" />
+                            : <div className="w-full h-full flex items-center justify-center text-lg">📖</div>
+                          }
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 truncate">{course.title}</p>
+                          <p className="text-xs text-gray-400">{lessons} lecciones · {students} estudiantes</p>
+                        </div>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 truncate">{course.title}</p>
-                        <p className="text-xs text-gray-400">{lessons} lecciones · {students} estudiantes</p>
+                      <div className="flex items-center gap-2 flex-shrink-0 self-end sm:self-center">
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${color}`}>{label}</span>
+                        <Link href={`/teacher/courses/${course.id}`} className="text-xs text-[#C4161C] hover:text-red-800 font-medium px-2.5 py-1.5 rounded hover:bg-red-50 transition-colors flex items-center min-h-[36px]">
+                          Editar →
+                        </Link>
                       </div>
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${color}`}>{label}</span>
-                      <Link href={`/teacher/courses/${course.id}`} className="text-xs text-[#C4161C] hover:text-red-800 font-medium px-2 py-1 rounded hover:bg-red-50 transition-colors flex-shrink-0">
-                        Editar →
-                      </Link>
                     </div>
                   );
                 })
@@ -159,15 +166,15 @@ export default async function TeacherDashboard() {
           {/* Recent Enrollments */}
           {recentEnrollments && recentEnrollments.length > 0 && (
             <div>
-              <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Inscripciones Recientes</h2>
-              <div className="bg-white rounded-xl border border-gray-200 divide-y divide-gray-100">
+              <h2 className="text-xs sm:text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3 sm:mb-4">Inscripciones Recientes</h2>
+              <div className="bg-white rounded-xl border border-gray-200 divide-y divide-gray-100 overflow-hidden">
                 {recentEnrollments.map((enrollment: any) => (
-                  <div key={enrollment.id} className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors">
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">{enrollment.profiles?.full_name || "Usuario"}</p>
-                      <p className="text-xs text-gray-400">{enrollment.courses?.title}</p>
+                  <div key={enrollment.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 p-3 sm:p-4 hover:bg-gray-50 transition-colors">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-gray-900 truncate">{enrollment.profiles?.full_name || "Usuario"}</p>
+                      <p className="text-xs text-gray-400 truncate">{enrollment.courses?.title}</p>
                     </div>
-                    <div className="text-right">
+                    <div className="text-left sm:text-right flex-shrink-0">
                       <p className="text-sm font-semibold text-emerald-600">
                         ${Number(enrollment.amount_paid).toLocaleString("es-MX")} MXN
                       </p>
