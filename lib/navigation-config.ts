@@ -21,6 +21,12 @@ export const navigationItems: NavItem[] = [
 
   // ── Student ───────────────────────────────────────────────────────────────
   {
+    title: "Mi Panel",
+    href: "/student",
+    icon: "🏠",
+    roles: ["student"],
+  },
+  {
     title: "Mis Cursos",
     href: "/student/courses",
     icon: "📚",

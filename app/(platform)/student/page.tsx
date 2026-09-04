@@ -125,11 +125,12 @@ export default async function StudentDashboard() {
   return (
     <div className="max-w-6xl mx-auto space-y-6 sm:space-y-8 min-w-0 w-full">
       {/* Welcome Section */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl p-4 sm:p-6 shadow-xs">
+      <div className="bg-gradient-to-r from-slate-800 to-slate-700 text-white rounded-xl p-4 sm:p-6 shadow-xs">
+        <p className="text-slate-300 text-xs sm:text-sm font-medium mb-1 break-words">Panel de Estudiante</p>
         <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-1 sm:mb-2 break-words">
-          ¡Bienvenido de vuelta, {profile.full_name || "Estudiante"}!
+          ¡Bienvenido de vuelta, {profile.full_name || "Estudiante"}! 👋
         </h1>
-        <p className="text-blue-100 text-xs sm:text-sm break-words">
+        <p className="text-slate-300 text-xs sm:text-sm break-words">
           Continúa tu aprendizaje donde lo dejaste
         </p>
       </div>
