@@ -20,6 +20,10 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
+  const host = request.headers.get("x-forwarded-host") || request.headers.get("host");
+  const cleanHost = host?.split(":")[0] || "";
+  const cookieDomain = cleanHost.endsWith("cycecmexico.com") ? ".cycecmexico.com" : undefined;
+
   let supabaseResponse = NextResponse.next({
     request,
   });
@@ -28,6 +32,12 @@ export async function proxy(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!,
     {
+      cookieOptions: {
+        domain: cookieDomain,
+        path: "/",
+        sameSite: "lax",
+        secure: process.env.NODE_ENV === "production",
+      },
       cookies: {
         getAll() {
           return request.cookies.getAll();
@@ -55,16 +65,51 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith("/browse");
 
   if (isProtectedRoute) {
+    const isPaymentReturn = pathname.startsWith("/student/courses") && request.nextUrl.searchParams.get("success") === "true";
+    const cookieNames = request.cookies.getAll().map((c) => c.name);
+
+    if (isPaymentReturn || pathname.startsWith("/student/courses")) {
+      console.log('🔍 [DIAGNOSTIC: proxy_auth_check_start]', {
+        url: request.url,
+        pathname,
+        search: request.nextUrl.search,
+        host,
+        cookieNames,
+      });
+    }
+
     const {
       data: { user },
+      error: authError,
     } = await supabase.auth.getUser();
+
+    if (isPaymentReturn || pathname.startsWith("/student/courses")) {
+      console.log('🔍 [DIAGNOSTIC: proxy_auth_check_result]', {
+        pathname,
+        hasUser: !!user,
+        userId: user?.id,
+        authError: authError?.message,
+      });
+    }
 
     if (!user) {
       // Redirect to login if not authenticated
       const url = request.nextUrl.clone();
       url.pathname = "/login";
       url.searchParams.set("redirect", pathname);
-      return NextResponse.redirect(url);
+
+      console.log('⚠️ [DIAGNOSTIC: proxy_redirect_to_login]', {
+        redirectTarget: url.toString(),
+        reason: 'no_user',
+        authError: authError?.message,
+      });
+
+      const redirectResponse = NextResponse.redirect(url);
+      // Copy staged cookies from supabaseResponse to prevent losing refreshed/updated auth state
+      supabaseResponse.cookies.getAll().forEach((cookie) => {
+        redirectResponse.cookies.set(cookie.name, cookie.value);
+      });
+      return redirectResponse;
     }
 
     // Check admin access only if accessing admin routes

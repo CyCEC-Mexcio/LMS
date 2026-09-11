@@ -131,6 +131,18 @@ export async function POST(req: NextRequest) {
 
     let customerId = profile?.stripe_customer_id;
 
+    if (customerId) {
+      try {
+        const existingCust = await stripe.customers.retrieve(customerId);
+        if ((existingCust as any).deleted) {
+          customerId = null;
+        }
+      } catch {
+        // Customer was created in test mode or another account, regenerate for current mode
+        customerId = null;
+      }
+    }
+
     if (!customerId) {
       console.log('👤 Creating new Stripe customer');
       const customer = await stripe.customers.create({
@@ -171,6 +183,34 @@ export async function POST(req: NextRequest) {
 
     console.log('💰 Amount:', totalAmount, course.currency);
 
+    // Determine the base URL dynamically from request headers, falling back to NEXT_PUBLIC_SITE_URL
+    const originHeader = req.headers.get('origin');
+    const refererHeader = req.headers.get('referer');
+    let refererOrigin: string | null = null;
+    if (refererHeader) {
+      try {
+        refererOrigin = new URL(refererHeader).origin;
+      } catch {
+        // ignore invalid referer URL
+      }
+    }
+    const hostHeader = req.headers.get('x-forwarded-host') || req.headers.get('host');
+    const protoHeader = req.headers.get('x-forwarded-proto') || 'https';
+    const hostOrigin = hostHeader ? `${protoHeader}://${hostHeader}` : null;
+
+    const siteUrl = originHeader || refererOrigin || hostOrigin || process.env.NEXT_PUBLIC_SITE_URL || 'https://cycecmexico.com';
+
+    console.log('🔍 [DIAGNOSTIC: checkout_creation]', {
+      userId: user.id,
+      userEmail: user.email,
+      courseId,
+      originHeader,
+      refererHeader,
+      hostHeader,
+      resolvedSiteUrl: siteUrl,
+      cookieNames: req.cookies.getAll().map((c) => c.name),
+    });
+
     // Create Stripe checkout session
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
@@ -189,8 +229,8 @@ export async function POST(req: NextRequest) {
         },
       ],
       mode: 'payment',
-      success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/student/courses/${courseId}?success=true`,
-      cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/browse/test?canceled=true`,
+      success_url: `${siteUrl}/student/courses/${courseId}?success=true&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${siteUrl}/browse/test?canceled=true`,
       metadata: {
         courseId: courseId,
         studentId: user.id,
@@ -209,7 +249,11 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    console.log('✅ Checkout session created:', session.id);
+    console.log('✅ Checkout session created:', {
+      sessionId: session.id,
+      sessionUrl: session.url,
+      success_url: `${siteUrl}/student/courses/${courseId}?success=true`,
+    });
 
     return NextResponse.json({
       sessionId: session.id,

@@ -1,8 +1,16 @@
-
 import { createBrowserClient } from "@supabase/ssr";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
+
+function getCookieDomain() {
+  if (typeof window === "undefined") return undefined;
+  const hostname = window.location.hostname;
+  if (hostname.endsWith("cycecmexico.com")) {
+    return ".cycecmexico.com";
+  }
+  return undefined;
+}
 
 export const createClient = () =>
   createBrowserClient(
@@ -10,11 +18,10 @@ export const createClient = () =>
     supabaseKey!,
     {
       cookieOptions: {
-        // Session-only cookies: the browser deletes them when ALL tabs/windows
-        // of the browser are closed. This gives us "logout on close" for free
-        // with zero API calls. The maxAge of 0 tells @supabase/ssr to omit
-        // the Expires/Max-Age directive, making them true session cookies.
-        maxAge: 0,
+        domain: getCookieDomain(),
+        path: "/",
+        sameSite: "lax",
+        secure: typeof window !== "undefined" ? window.location.protocol === "https:" : process.env.NODE_ENV === "production",
       },
     }
   );

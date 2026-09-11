@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -20,6 +20,24 @@ function LoginForm() {
   const [step, setStep] = useState<"email" | "password">("email");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Diagnostic logging when redirected with success=true or redirect param
+  useEffect(() => {
+    if (searchParams.get("success") === "true" || searchParams.get("redirect")) {
+      supabase.auth.getSession().then(({ data: { session }, error: sessionError }) => {
+        console.log("🔍 [DIAGNOSTIC: login_page_visited]", {
+          url: typeof window !== "undefined" ? window.location.href : "",
+          successParam: searchParams.get("success"),
+          redirectParam: searchParams.get("redirect"),
+          hasSession: !!session,
+          userId: session?.user?.id,
+          userEmail: session?.user?.email,
+          cookieString: typeof document !== "undefined" ? document.cookie : "",
+          sessionError: sessionError?.message,
+        });
+      });
+    }
+  }, [searchParams, supabase]);
 
   const handleContinue = (e: React.FormEvent) => {
     e.preventDefault();

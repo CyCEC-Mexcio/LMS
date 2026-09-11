@@ -12,6 +12,11 @@ export const createClient = async () => {
     supabaseUrl!,
     supabaseKey!,
     {
+      cookieOptions: {
+        path: "/",
+        sameSite: "lax",
+        secure: process.env.NODE_ENV === "production",
+      },
       cookies: {
         getAll() {
           return cookieStore.getAll();
